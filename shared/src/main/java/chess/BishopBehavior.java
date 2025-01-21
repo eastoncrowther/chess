@@ -9,7 +9,6 @@ public class BishopBehavior implements PieceBehavior{
 
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
 
-
         // generate moves to the top right corner.
         for (int row = myPosition.getRow() + 1, col = myPosition.getColumn() + 1; row <= 8 && col <= 8; row++, col++) {
             bishopMoves.add(new ChessMove(myPosition, new ChessPosition(row, col), BISHOP));
@@ -28,5 +27,9 @@ public class BishopBehavior implements PieceBehavior{
         }
 
         return bishopMoves;
+    }
+    /* upDown should be entered as + for up and - for down. leftRight should be - for left and + for right */
+    public void calculateDirection (char upDown, char leftRight, Collection<ChessMove> moves, ChessPosition myPosition) {
+
     }
 }
