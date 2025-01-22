@@ -46,12 +46,19 @@ public class ChessMove {
      */
     public ChessPiece.PieceType getPromotionPiece() {
         // if a piece reaches the end of the board
-        if (this.promotionPiece == PieceType.PAWN) {
-            if (endPosition.getRow() == 1 || endPosition.getRow() == 8) {
-                return promotionPiece;
-            }
-        }
         return null;
+    }
+
+
+
+    @Override
+    public String toString() {
+        int startRow = startPosition.getRow();
+        int startCol = startPosition.getColumn();
+        int endRow = endPosition.getRow();
+        int endCol = endPosition.getColumn();
+
+        return "" + startRow + startCol + endRow + endCol;
     }
 
     @Override

@@ -2,9 +2,6 @@ package chess;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
-
-import static chess.ChessPiece.PieceType.BISHOP;
 
 public class BishopBehavior implements PieceBehavior{
 
@@ -47,11 +44,11 @@ public class BishopBehavior implements PieceBehavior{
                 ChessPiece pieceOnSquare = board.getPiece(nextPosition);
 
                 if (pieceOnSquare == null) {
-                    bishopMoves.add(new ChessMove(myPosition, nextPosition, BISHOP));
+                    bishopMoves.add(new ChessMove(myPosition, nextPosition, null));
                 }
                 else {
                     if (pieceOnSquare.getTeamColor() != myTeamColor) {
-                        bishopMoves.add(new ChessMove(myPosition, nextPosition, BISHOP));
+                        bishopMoves.add(new ChessMove(myPosition, nextPosition, null));
                     }
                     break;
                 }
