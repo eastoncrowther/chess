@@ -34,7 +34,7 @@ public class KnightBehavior implements PieceBehavior{
             col += incrementCol;
 
             // check if position is in bounds
-            if (row > 0 && col > 0 && row < 7 && col < 7) {
+            if (row >= 0 && col >= 0 && row <= 7 && col <= 7) {
                 ChessPosition nextPosition = new ChessPosition(row + 1, col + 1);
                 if (board.getPiece(nextPosition) == null) {
                     // there is no piece on the position
@@ -45,7 +45,6 @@ public class KnightBehavior implements PieceBehavior{
                 }
             }
         }
-
         return knightMoves;
     }
 }
