@@ -30,12 +30,11 @@ public class KnightBehavior implements PieceBehavior{
             int row = myPosition.getRow() - 1;
             int col = myPosition.getColumn() - 1;
 
-
             row += incrementRow;
             col += incrementCol;
 
             // check if position is in bounds
-            if (row > 0 || col > 0 || row < 7 || col < 7) {
+            if (row > 0 && col > 0 && row < 7 && col < 7) {
                 ChessPosition nextPosition = new ChessPosition(row + 1, col + 1);
                 if (board.getPiece(nextPosition) == null) {
                     // there is no piece on the position
