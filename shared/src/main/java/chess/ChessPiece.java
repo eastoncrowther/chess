@@ -51,14 +51,18 @@ public class ChessPiece {
      * @return Collection of valid moves
      */
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
-        PieceBehavior moves = switch(getPieceType()) {
-            case KING -> new KingBehavior();
-            case QUEEN -> new QueenBehavior();
-            case BISHOP -> new BishopBehavior();
-            case KNIGHT -> new KnightBehavior();
-            case ROOK -> new RookBehavior();
-            case PAWN -> new PawnBehavior();
-        };
+
+        PieceBehavior moves = new BishopBehavior();
+
+//        PieceBehavior moves = switch(getPieceType()) {
+//            case KING -> new KingBehavior();
+//            case QUEEN -> new QueenBehavior();
+//            case BISHOP -> new BishopBehavior();
+//            case KNIGHT -> new KnightBehavior();
+//            case ROOK -> new RookBehavior();
+//            case PAWN -> new PawnBehavior();
+//        };
         return moves.pieceMoves(board, myPosition);
     }
+
 }
