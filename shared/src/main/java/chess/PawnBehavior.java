@@ -22,29 +22,26 @@ public class PawnBehavior implements PieceBehavior {
 
     // white pawns start at the bottom and go up
     public void whitePawnMoves (ChessBoard board, ChessPosition myPosition, Collection<ChessMove> pawnMoves) {
-        moveOneSpace(1, board, myPosition, myPosition, pawnMoves);
-
-        // if the white pawn is on row 2, (1-8) it may be able to move 2 spaces
-        if (myPosition.getRow() == 2) {
-            moveOneSpace(1, board, new ChessPosition(myPosition.getRow() + 1, myPosition.getColumn()), myPosition, pawnMoves);
+        if (moveOneSpace(1, board, myPosition, myPosition, pawnMoves)) {
+            if (myPosition.getRow() == 2) {
+                moveOneSpace(1, board, new ChessPosition(myPosition.getRow() + 1, myPosition.getColumn()), myPosition, pawnMoves);
+            }
         }
     }
 
     // black pawns start at the top and go down
     public void blackPawnMoves (ChessBoard board, ChessPosition myPosition, Collection<ChessMove> pawnMoves) {
-        moveOneSpace(-1, board, myPosition, myPosition, pawnMoves);
-
-        // if the black pawn is on row 7, (1-8) it may be able to move 2 spaces
-        if (myPosition.getRow() == 7) {
-            moveOneSpace(-1, board, new ChessPosition(myPosition.getRow() - 1, myPosition.getColumn()), myPosition, pawnMoves);
+        if (moveOneSpace(-1, board, myPosition, myPosition, pawnMoves)) {
+            if (myPosition.getRow() == 7) {
+                moveOneSpace(-1, board, new ChessPosition(myPosition.getRow() - 1, myPosition.getColumn()), myPosition, pawnMoves);
+            }
         }
-
     }
 
 
 
     // direction should be int -1 for black and +1 for white
-    public void moveOneSpace (int direction, ChessBoard board, ChessPosition currentPosition, ChessPosition myPosition, Collection<ChessMove> pawnMoves) {
+    public boolean moveOneSpace (int direction, ChessBoard board, ChessPosition currentPosition, ChessPosition myPosition, Collection<ChessMove> pawnMoves) {
         // on the scale 0 - 8
         int row = currentPosition.getRow();
         int col = currentPosition.getColumn();
@@ -57,12 +54,15 @@ public class PawnBehavior implements PieceBehavior {
                 // add move
                 if (endOfBoard(nextPosition.getRow())) {
                     pawnMoves.add(new ChessMove(myPosition, nextPosition, ChessPiece.PieceType.QUEEN));
+                    return true;
                 }
                 else {
                     pawnMoves.add(new ChessMove(myPosition, nextPosition, null));
+                    return true;
                 }
             }
         }
+        return false;
     }
 
     // piece at end of board (on the scale 1 - 8)
