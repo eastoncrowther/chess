@@ -122,8 +122,8 @@ public class PawnBehavior implements PieceBehavior {
                 ChessPosition moveDiagonal = new ChessPosition(row + 1, col + 1);
                 // can only move here if there is a black piece
                 if (board.getPiece(moveDiagonal) != null) {
-                    if (board.getPiece(moveDiagonal).getTeamColor() == ChessGame.TeamColor.BLACK) {
-                        if (moveDiagonal.getRow() == 0) {
+                    if (board.getPiece(moveDiagonal).getTeamColor() == ChessGame.TeamColor.WHITE) {
+                        if (moveDiagonal.getRow() == 1) {
                             pawnMoves.add(new ChessMove(myPosition, moveDiagonal, ChessPiece.PieceType.QUEEN));
                         }
                         else {
