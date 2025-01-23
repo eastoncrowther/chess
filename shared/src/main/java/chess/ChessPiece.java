@@ -68,7 +68,7 @@ public class ChessPiece {
      */
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
 
-        PieceBehavior moves = new KingBehavior();
+        PieceBehavior moves = new PawnBehavior();
 //        PieceBehavior moves = switch(getPieceType()) {
 //            case KING -> new KingBehavior();
 //            case QUEEN -> new QueenBehavior();
