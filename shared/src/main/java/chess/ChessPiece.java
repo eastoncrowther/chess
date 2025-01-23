@@ -68,15 +68,14 @@ public class ChessPiece {
      */
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
 
-        PieceBehavior moves = new PawnBehavior();
-//        PieceBehavior moves = switch(getPieceType()) {
-//            case KING -> new KingBehavior();
-//            case QUEEN -> new QueenBehavior();
-//            case BISHOP -> new BishopBehavior();
-//            case KNIGHT -> new KnightBehavior();
-//            case ROOK -> new RookBehavior();
-//            case PAWN -> new PawnBehavior();
-//        };
+        PieceBehavior moves = switch(getPieceType()) {
+            case KING -> new KingBehavior();
+            case QUEEN -> new QueenBehavior();
+            case BISHOP -> new BishopBehavior();
+            case KNIGHT -> new KnightBehavior();
+            case ROOK -> new RookBehavior();
+            case PAWN -> new PawnBehavior();
+        };
         return moves.pieceMoves(board, myPosition);
     }
 

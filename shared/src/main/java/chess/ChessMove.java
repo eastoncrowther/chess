@@ -45,8 +45,7 @@ public class ChessMove {
      * @return Type of piece to promote a pawn to, or null if no promotion
      */
     public ChessPiece.PieceType getPromotionPiece() {
-        // if a piece reaches the end of the board
-        return null;
+        return promotionPiece;
     }
 
 
@@ -57,6 +56,7 @@ public class ChessMove {
         int startCol = startPosition.getColumn();
         int endRow = endPosition.getRow();
         int endCol = endPosition.getColumn();
+
 
         return "" + startRow + startCol + endRow + endCol;
     }
