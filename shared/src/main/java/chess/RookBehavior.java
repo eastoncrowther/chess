@@ -9,51 +9,40 @@ public class RookBehavior implements PieceBehavior{
     public Collection<ChessMove> pieceMoves (ChessBoard board, ChessPosition myPosition) {
         Collection<ChessMove> rookMoves = new ArrayList<>();
 
-        int[][] steps = {
+        int[][] diagonals = {
                 {1, 0},
                 {-1, 0},
                 {0, 1},
                 {0, -1}
         };
-        // get team color
-        ChessGame.TeamColor myTeamColor = board.getPiece(myPosition).getTeamColor();
 
-        // positions span 1 - 8 while the board is indexed 0 - 7
+        for (int[] diagonal : diagonals) {
+            int row = myPosition.getRow() + diagonal[0];
+            int col = myPosition.getColumn() + diagonal[1];
 
-        for (int[] step : steps) {
-            int incrementRow = step[0];
-            int incrementCol = step[1];
-
-            // get initial position
-            int row = myPosition.getRow() - 1;
-            int col = myPosition.getColumn()  - 1;
-
-            while (true) {
-                row += incrementRow;
-                col += incrementCol;
-
-                // check if position is in bounds
-                if (row < 0 || col < 0 || row > 7 || col > 7) {
-                    break;
-                }
-
-                ChessPosition nextPosition = new ChessPosition(row + 1, col + 1);
-
-                // check if there is a piece at the new position.
-                if (board.getPiece(nextPosition) == null) {
-                    // there is no piece on the position
-                    rookMoves.add(new ChessMove(myPosition, nextPosition, null));
-                }
-                else {
-                    // if there is an enemy piece on the position
-                    if (board.getPiece(nextPosition).getTeamColor() != myTeamColor) {
+            while (inBounds(row, col)) {
+                ChessPosition nextPosition = new ChessPosition(row, col);
+                if (board.getPiece(nextPosition) != null) {
+                    if (board.getPiece(nextPosition).getTeamColor() != board.getPiece(myPosition).getTeamColor()) {
+                        // add the move then break
                         rookMoves.add(new ChessMove(myPosition, nextPosition, null));
                     }
-                    // the piece at the given position is on my team
                     break;
+                }
+                else {
+                    // add the move
+                    rookMoves.add(new ChessMove(myPosition, nextPosition, null));
+                    row += diagonal[0];
+                    col += diagonal[1];
                 }
             }
         }
         return rookMoves;
+    }
+    public boolean inBounds (int row, int col) {
+        if (row < 1 || row > 8 || col < 1 || col > 8) {
+            return false;
+        }
+        return true;
     }
 }

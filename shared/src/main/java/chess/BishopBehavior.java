@@ -4,56 +4,44 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class BishopBehavior implements PieceBehavior{
-
-    @Override
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
         Collection<ChessMove> bishopMoves = new ArrayList<>();
 
-        // the position is 1 - 8 while the board itself only has indexes 0 - 7
-
-        int[][] steps = {
+        int[][] diagonals = {
                 {1, 1},
                 {1, -1},
                 {-1, 1},
                 {-1, -1}
         };
 
-        // calculate my team color
-        ChessGame.TeamColor myTeamColor = board.getPiece(myPosition).getTeamColor();
+        for (int[] diagonal : diagonals) {
+            int row = myPosition.getRow() + diagonal[0];
+            int col = myPosition.getColumn() + diagonal[1];
 
-        for (int[] step : steps) {
-            int incrementRow = step[0];
-            int incrementCol = step[1];
-
-            // initial positions on the board 0 based indexing
-            int row = myPosition.getRow() - 1;
-            int col = myPosition.getColumn() - 1;
-
-            while (true) {
-                // increment positions
-                row += incrementRow;
-                col += incrementCol;
-
-                // check if out of bounds: 0 based indexing
-                if (row < 0 || col < 0 || row > 7 || col > 7) {
-                    break;
-                }
-                // make new position: 1 based indexing
-                ChessPosition nextPosition = new ChessPosition(row + 1, col + 1);
-
-                ChessPiece pieceOnSquare = board.getPiece(nextPosition);
-
-                if (pieceOnSquare == null) {
-                    bishopMoves.add(new ChessMove(myPosition, nextPosition, null));
-                }
-                else {
-                    if (pieceOnSquare.getTeamColor() != myTeamColor) {
+            while (inBounds(row, col)) {
+                ChessPosition nextPosition = new ChessPosition(row, col);
+                if (board.getPiece(nextPosition) != null) {
+                    if (board.getPiece(nextPosition).getTeamColor() != board.getPiece(myPosition).getTeamColor()) {
+                        // add the move then break
                         bishopMoves.add(new ChessMove(myPosition, nextPosition, null));
                     }
                     break;
+                }
+                else {
+                    // add the move
+                    bishopMoves.add(new ChessMove(myPosition, nextPosition, null));
+                    row += diagonal[0];
+                    col += diagonal[1];
                 }
             }
         }
         return bishopMoves;
     }
+    public boolean inBounds (int row, int col) {
+        if (row < 1 || row > 8 || col < 1 || col > 8) {
+            return false;
+        }
+        return true;
+    }
+
 }
