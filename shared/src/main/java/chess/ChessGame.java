@@ -11,7 +11,7 @@ import java.util.Collection;
 public class ChessGame {
 
     private TeamColor team;
-    private ChessBoard board;
+    private ChessBoard chessBoard;
 
     public ChessGame() {
 
@@ -49,10 +49,15 @@ public class ChessGame {
      * startPosition
      */
     public Collection<ChessMove> validMoves(ChessPosition startPosition) {
+        ChessBoard tempBoard = getBoard();
+
+
         // create a new instance of ChessPiece
-        ChessPiece piece = getBoard().getPiece(startPosition);
-
-
+        ChessPiece piece = tempBoard.getPiece(startPosition);
+        // get all the moves that piece can make
+        Collection<ChessMove> moves = piece.pieceMoves(getBoard(), startPosition);
+        // return the moves.
+        return moves;
     }
 
     /**
@@ -102,7 +107,7 @@ public class ChessGame {
      * @param board the new board to use
      */
     public void setBoard(ChessBoard board) {
-        this.board = board;
+        this.chessBoard = board;
     }
 
     /**
@@ -111,6 +116,6 @@ public class ChessGame {
      * @return the chessboard
      */
     public ChessBoard getBoard() {
-        return board;
+        return chessBoard.clone();
     }
 }
