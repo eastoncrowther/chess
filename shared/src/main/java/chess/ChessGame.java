@@ -67,7 +67,36 @@ public class ChessGame {
      * @throws InvalidMoveException if move is invalid
      */
     public void makeMove(ChessMove move) throws InvalidMoveException {
-        throw new RuntimeException("Not implemented");
+        ChessPosition start = move.getStartPosition();
+        ChessPosition end = move.getEndPosition();
+        ChessPiece piece = chessBoard.getPiece(start);
+
+
+        // if there is no piece at the start position
+        if (piece == null) {
+            throw new InvalidMoveException("No piece at the start position: " + start);
+        }
+        // if it is not the right team's turn
+        TeamColor currentTeam = piece.getTeamColor();
+        if (this.team != currentTeam) {
+            throw new InvalidMoveException("" + currentTeam + " is not" + this.team);
+        }
+        // if the move is not within the valid moves of the piece
+        Collection<ChessMove> validMoves = piece.pieceMoves(getBoard(), start);
+        if (!validMoves.contains(move)) {
+            throw new InvalidMoveException("Invalid move for " + piece + " from " + start + " to " + end);
+        }
+
+
+        // move the piece from move.startPosition() to move.endPosition()
+        this.chessBoard.addPiece(start, null);
+        this.chessBoard.addPiece(end, piece);
+
+        // update which team makes the next move
+        this.team = switch (currentTeam) {
+            case BLACK -> TeamColor.WHITE;
+            case WHITE -> TeamColor.BLACK;
+        };
     }
 
     /**
