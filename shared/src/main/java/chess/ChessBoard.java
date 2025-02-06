@@ -35,6 +35,30 @@ public class ChessBoard implements Cloneable{
     }
 
     /**
+     * finds the king given a certain team color
+     */
+    public ChessPosition getKing(ChessGame.TeamColor teamColor) {
+        // parse the board and return the position of the king of a given team
+        for (int row = 0; row <= 7; row ++) {
+            for (int col = 0; col <= 7; col ++) {
+                // make sure there is a piece there
+                if (board[row][col] != null) {
+                    ChessPiece piece = board[row][col];
+
+                    // make sure the piece belongs to the desired team
+                    if (piece.getTeamColor() == teamColor && piece.getPieceType() == ChessPiece.PieceType.KING) {
+                        // chess position is indexed 1 - 8
+                        return new ChessPosition(row + 1, col + 1);
+                    }
+                }
+            }
+        }
+        // if no king is found for the given team
+        return null;
+    }
+
+
+    /**
      * Sets the board to the default starting board
      * (How the game of chess normally starts)
      */
