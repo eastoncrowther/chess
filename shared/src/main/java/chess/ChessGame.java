@@ -12,10 +12,11 @@ import java.util.Collection;
 public class ChessGame {
 
     private TeamColor team;
-    private ChessBoard chessBoard;
+    private ChessBoard chessBoard = new ChessBoard();
 
     public ChessGame() {
-
+        chessBoard.resetBoard();
+        this.team = TeamColor.WHITE;
     }
 
     /**
@@ -70,7 +71,7 @@ public class ChessGame {
     }
 
     public boolean safeMove (ChessMove move, TeamColor teamColor) {
-        ChessBoard tempBoard = getBoard();
+        ChessBoard tempBoard = chessBoard.clone();
         ChessPosition start = move.getStartPosition();
         ChessPosition end = move.getEndPosition();
         ChessPiece piece = tempBoard.getPiece(start);
@@ -132,14 +133,18 @@ public class ChessGame {
             throw new InvalidMoveException("" + currentTeam + " is not" + this.team);
         }
         // if the move is not within the valid moves of the piece
-        Collection<ChessMove> validMoves = piece.pieceMoves(chessBoard, start);
+        Collection<ChessMove> validMoves = validMoves(start);
         if (!validMoves.contains(move)) {
             throw new InvalidMoveException("Invalid move for " + piece + " from " + start + " to " + end);
         }
-        
         // move the piece
         this.chessBoard.addPiece(start, null);
-        this.chessBoard.addPiece(end, piece);
+        if (move.getPromotionPiece() == null) {
+            this.chessBoard.addPiece(end, piece);
+        }
+        else {
+            this.chessBoard.addPiece(end, new ChessPiece(currentTeam, move.getPromotionPiece()));
+        }
 
         // update which team makes the next move
         this.team = switch (currentTeam) {
@@ -166,7 +171,7 @@ public class ChessGame {
      * @return True if the specified team is in check
      */
     public boolean isInCheck(TeamColor teamColor) {
-        ChessBoard tempBoard = getBoard();
+        ChessBoard tempBoard = chessBoard.clone();
         ChessPosition kingPosition = tempBoard.getKing(teamColor);
 
         // If member of the opposing team can reach kingPosition return true, else return false.
@@ -189,6 +194,14 @@ public class ChessGame {
         return false;
     }
 
+    public boolean kingMoveBreakCheck (TeamColor teamColor, ChessBoard tempBoard) {
+        ChessPosition kingPosition = tempBoard.getKing(teamColor);
+        Collection<ChessMove> kingMoves = validMoves(kingPosition);
+        if(kingMoves.isEmpty()) {
+            return false;
+        }
+        return true;
+    }
     /**
      * Determines if the given team is in checkmate
      *
@@ -196,14 +209,35 @@ public class ChessGame {
      * @return True if the specified team is in checkmate
      */
     public boolean isInCheckmate(TeamColor teamColor) {
+        // is the king in check
+        if (!isInCheck(teamColor)) {
+            return false;
+        }
+        ChessBoard tempBoard = chessBoard.clone();
         // Check if the king can move out of check
+        if (kingMoveBreakCheck(teamColor, tempBoard)){
+            return false;
+        }
+        // Check the valid moves for each piece with the same teamColor
 
-        // Check the valid moves for each piece on the teamColor
-
-
-        
-
-        throw new RuntimeException("Not implemented");
+        // Parse board for teammates
+        for(int row = 1; row <= 8; row ++) {
+            for(int col = 1; col <= 8; col ++) {
+                ChessPiece piece = tempBoard.getPiece(new ChessPosition(row, col));
+                // make sure there is a piece on the position
+                if (piece != null) {
+                    if (piece.getTeamColor() == teamColor) {
+                        Collection<ChessMove> validMoves = validMoves(new ChessPosition(row, col));
+                        for (ChessMove move : validMoves) {
+                            if (safeMove(move, teamColor)) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     /**
@@ -214,7 +248,22 @@ public class ChessGame {
      * @return True if the specified team is in stalemate, otherwise false
      */
     public boolean isInStalemate(TeamColor teamColor) {
-        throw new RuntimeException("Not implemented");
+
+        for(int row = 1; row <= 8; row ++) {
+            for(int col = 1; col <= 8; col ++) {
+                ChessPiece piece = chessBoard.getPiece(new ChessPosition(row, col));
+                // make sure there is a piece on the position
+                if (piece != null) {
+                    if (piece.getTeamColor() == teamColor) {
+                        Collection<ChessMove> validMoves = validMoves(new ChessPosition(row, col));
+                        if (!validMoves.isEmpty()) {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     /**
@@ -232,6 +281,6 @@ public class ChessGame {
      * @return the chessboard
      */
     public ChessBoard getBoard() {
-        return chessBoard.clone();
+        return chessBoard;
     }
 }
