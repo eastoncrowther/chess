@@ -8,18 +8,22 @@ public class UserDao {
 
     public UserDao () {}
     // create a new user
-    public void createUser (UserData user) {
+    public void createUser (UserData user) throws DataAccessException {
+        // check if the user already exists
+        if (users.contains(user)) {
+            throw new DataAccessException("User with this ID already exists.");
+        }
         this.users.add(user);
     }
     // retrieve a user with the given username
-    public UserData getUser (String username) {
+    public UserData getUser (String username) throws DataAccessException {
         for (UserData user : this.users) {
             if (username.equals(user.username())) {
                 return user;
             }
         }
         // no user exists with that username
-        return null;
+        throw new DataAccessException(username + " was not found in the database");
     }
     // clears all users
     public void clear () {

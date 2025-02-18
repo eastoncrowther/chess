@@ -9,18 +9,21 @@ public class AuthDao {
     public AuthDao () {}
 
     // adds an authToken to the array
-    public void createAuth (AuthData authData) {
+    public void createAuth (AuthData authData) throws DataAccessException {
+        if (this.auths.contains(authData)) {
+            throw new DataAccessException("authToken already exists");
+        }
         this.auths.add(authData);
     }
     // returns an authToken from the array
-    public AuthData getAuth (String authToken) {
+    public AuthData getAuth (String authToken) throws DataAccessException {
         for (AuthData auth : this.auths) {
             if (authToken.equals(auth.authToken())) {
                 return auth;
             }
         }
         // no auth data exists with that token.
-        return null;
+        throw new DataAccessException(authToken + " was not found in the database");
     }
     // removes an authToken from the array
     public void deleteAuth (String authToken) {
