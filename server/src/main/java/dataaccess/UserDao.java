@@ -1,6 +1,5 @@
 package dataaccess;
 import model.UserData;
-
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -14,7 +13,7 @@ public class UserDao {
     }
     // retrieve a user with the given username
     public UserData getUser (String username) {
-        for (UserData user : users) {
+        for (UserData user : this.users) {
             if (username.equals(user.username())) {
                 return user;
             }
