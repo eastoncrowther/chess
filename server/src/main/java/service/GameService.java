@@ -1,4 +1,5 @@
 package service;
+import dataaccess.DataAccessException;
 import dataaccess.MemoryAuthDAO;
 import dataaccess.MemoryGameDAO;
 import model.AuthData;
@@ -18,12 +19,38 @@ public class GameService {
 
     public Collection<GameData> list (String authToken) {
         Collection<GameData> games = new HashSet<>();
-        // check the authToken
         AuthData auth = authDAO.getAuth(authToken);
         if (auth == null) {
             return null;
         }
-        // fetch the games
         return gameDAO.listGames();
+    }
+    public CreateResult createGame (CreateRequest createRequest) {
+        AuthData auth = authDAO.getAuth(createRequest.authToken());
+        if (auth == null) {
+            return null;
+        }
+        try {
+            int gameID = gameDAO.createGame(createRequest.game());
+            return new CreateResult(gameID);
+        } catch (DataAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    public void join (JoinRequest joinRequest) {
+        AuthData auth = authDAO.getAuth(joinRequest.authToken());
+        if (auth == null) {
+            return;
+        }
+        try {
+            GameData game = gameDAO.getGame(joinRequest.gameID());
+            gameDAO.updateGame(game);
+        } catch (DataAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    public void clear () {
+        gameDAO.clear();
+        authDAO.clear();
     }
 }

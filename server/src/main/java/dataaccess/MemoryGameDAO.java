@@ -12,7 +12,7 @@ public class MemoryGameDAO implements GameDAO{
     }
 
     @Override
-    public void createGame (GameData game) throws DataAccessException{
+    public int createGame(GameData game) throws DataAccessException {
         if (game == null) {
             throw new DataAccessException("Game data is null");
         }
@@ -20,6 +20,7 @@ public class MemoryGameDAO implements GameDAO{
         if (!inserted) {
             throw new DataAccessException("Game already exists");
         }
+        return game.gameID();
     }
 
     @Override
