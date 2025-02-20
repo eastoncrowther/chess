@@ -46,13 +46,12 @@ public class UserService {
     }
 
     public void logout (String authToken) {
+        AuthData auth = authDAO.getAuth(authToken);
+        if (auth == null) {
+            return;
+        }
         try {
-            AuthData auth = authDAO.getAuth(authToken);
-            try {
-                authDAO.deleteAuth(auth);
-            } catch (DataAccessException e) {
-                throw new RuntimeException(e);
-            }
+            authDAO.deleteAuth(auth);
         } catch (DataAccessException e) {
             throw new RuntimeException(e);
         }

@@ -21,18 +21,22 @@ public class MemoryAuthDAO implements AuthDAO{
         }
     }
     @Override
-    public AuthData getAuth (String authToken) throws DataAccessException {
+    public AuthData getAuth (String authToken) {
         for (AuthData auth : this.authdata) {
             if (authToken.equals(auth.authToken())) {
                 return auth;
             }
         }
-        throw new DataAccessException("authToken not found");
+        return null;
     }
     @Override
     public void deleteAuth (AuthData auth) throws DataAccessException{
         if (!this.authdata.remove(auth)) {
             throw new DataAccessException("auth not found");
         }
+    }
+    // checks if the database is empty
+    public boolean isEmpty () {
+        return this.authdata.isEmpty();
     }
 }

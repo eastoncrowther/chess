@@ -34,7 +34,6 @@ class UserServiceTest {
         var authDB = new MemoryAuthDAO();
         
         try {
-            // add me to the database
             userDB.createUser(new UserData("Easton", "123", "easton.crowther@gmail.com"));
         } catch (DataAccessException e) {
             throw new RuntimeException(e);
@@ -51,23 +50,46 @@ class UserServiceTest {
         Assertions.assertNull(noUser);
         Assertions.assertNull(badPassword);
     }
-    @Test
-    @DisplayName("Test unsuccessful login")
-    public void loginFail () {
-        var userDB = new MemoryUserDAO();
-        var authDB = new MemoryAuthDAO();
-        var userService = new UserService(userDB, authDB);
-
-    }
 
     @Test
     @DisplayName("Test logout")
     public void logout() {
+        var userDB = new MemoryUserDAO();
+        var authDB = new MemoryAuthDAO();
 
+        try {
+            userDB.createUser(new UserData("Easton", "123", "easton.crowther@gmail.com"));
+        } catch (DataAccessException e) {
+            throw new RuntimeException(e);
+        }
+
+        var userService = new UserService(userDB, authDB);
+
+        LoginResult loggedIn = userService.login(new LoginRequest("Easton", "123"));
+        // test logout
+        userService.logout(loggedIn.authToken()); // this function returns nothing
+
+        // check if the  auth token is in the database
+        Assertions.assertNull(authDB.getAuth(loggedIn.authToken()));
     }
     @Test
     @DisplayName("Test clear")
     public void clear () {
+        var userDB = new MemoryUserDAO();
+        var authDB = new MemoryAuthDAO();
 
+        try {
+            userDB.createUser(new UserData("Easton", "123", "easton.crowther@gmail.com"));
+        } catch (DataAccessException e) {
+            throw new RuntimeException(e);
+        }
+
+        var userService = new UserService(userDB, authDB);
+
+        userService.clear();
+
+        // check if the userDB and authDB are empty
+        Assertions.assertTrue(userDB.isEmpty());
+        Assertions.assertTrue(authDB.isEmpty());
     }
 }

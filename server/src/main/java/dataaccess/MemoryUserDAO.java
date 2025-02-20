@@ -30,4 +30,7 @@ public class MemoryUserDAO implements UserDAO{
         }
         return null;
     }
+    public boolean isEmpty () {
+        return this.userdata.isEmpty();
+    }
 }

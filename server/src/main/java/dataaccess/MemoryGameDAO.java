@@ -49,4 +49,7 @@ public class MemoryGameDAO implements GameDAO{
 
         this.gamedata.add(game);
     }
+    public boolean isEmpty () {
+        return this.gamedata.isEmpty();
+    }
 }
