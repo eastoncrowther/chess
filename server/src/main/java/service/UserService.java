@@ -16,7 +16,6 @@ public class UserService {
         this.authDAO = authDAO;
     }
 
-
     public RegisterResult register(RegisterRequest registerRequest) throws DataAccessException {
         if (userDAO.getUser(registerRequest.username()) != null) {
             // the user already exists
@@ -26,15 +25,42 @@ public class UserService {
         UserData user = new UserData(registerRequest.username(), registerRequest.password(), registerRequest.email());
         userDAO.createUser(user);
 
-        // create Auth token
-        String authToken = UUID.randomUUID().toString();
-        AuthData auth = new AuthData(authToken, user.username());
-        authDAO.createAuth(auth);
-
-        return new RegisterResult(user.username(), authToken);
+        return new RegisterResult(user.username(), createAuth(user.username()));
     }
-    public LoginResult login(LoginRequest loginRequest) {}
-    public void logout (LogoutRequest logoutRequest) {}
+
+    public LoginResult login(LoginRequest loginRequest) throws DataAccessException{
+        UserData user = userDAO.getUser(loginRequest.username());
+        if(user == null) {
+            // the user doesn't exist
+            throw new DataAccessException("User doesn't exist");
+        }
+
+        return new LoginResult(user.username(), createAuth(user.username()));
+    }
+    
+    public void logout (String authToken) {
+        try {
+            AuthData auth = authDAO.getAuth(authToken);
+            try {
+                authDAO.deleteAuth(auth);
+            } catch (DataAccessException e) {
+                throw new RuntimeException(e);
+            }
+        } catch (DataAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String createAuth (String username) {
+        String authToken = UUID.randomUUID().toString();
+        AuthData auth = new AuthData(authToken, username);
+        try {
+            authDAO.createAuth(auth);
+        } catch (DataAccessException e){
+            throw new RuntimeException(e);
+        }
+        return authToken;
+    }
 
 
 
