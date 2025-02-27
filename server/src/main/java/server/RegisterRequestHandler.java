@@ -10,7 +10,7 @@ import spark.Response;
 import spark.Route;
 
 public class RegisterRequestHandler implements Route {
-    UserService userService;
+    private final UserService userService;
 
     public RegisterRequestHandler (UserService userService) {
         this.userService = userService;

@@ -8,7 +8,7 @@ import spark.Response;
 import spark.Route;
 
 public class LoginRequestHandler implements Route {
-    UserService userService;
+    private final UserService userService;
 
     public LoginRequestHandler (UserService userService) {
         this.userService = userService;
@@ -20,6 +20,7 @@ public class LoginRequestHandler implements Route {
         LoginRequest loginRequest = serializer.fromJson(request.body(), LoginRequest.class);
 
         LoginResult loginResult = userService.login(loginRequest);
+
 
         return serializer.toJson(loginResult);
     }
