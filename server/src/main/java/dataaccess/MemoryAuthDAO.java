@@ -11,14 +11,8 @@ public class MemoryAuthDAO implements AuthDAO{
         this.authdata.clear();
     }
     @Override
-    public void createAuth (AuthData auth) throws DataAccessException {
-        if (auth == null) {
-            throw new DataAccessException("Auth data is null");
-        }
-        boolean inserted = this.authdata.add(auth);
-        if (!inserted) {
-            throw new DataAccessException("Auth already exists");
-        }
+    public void createAuth (AuthData auth) {
+        this.authdata.add(auth);
     }
     @Override
     public AuthData getAuth (String authToken) {
@@ -30,7 +24,7 @@ public class MemoryAuthDAO implements AuthDAO{
         return null;
     }
     @Override
-    public void deleteAuth (AuthData auth) throws DataAccessException{
+    public void deleteAuth (AuthData auth) throws DataAccessException {
         if (!this.authdata.remove(auth)) {
             throw new DataAccessException("auth not found");
         }

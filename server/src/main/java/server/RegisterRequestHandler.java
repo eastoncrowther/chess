@@ -1,7 +1,7 @@
 package server;
 
 import com.google.gson.Gson;
-import org.eclipse.jetty.server.Authentication;
+import service.BadRequestException;
 import service.RegisterRequest;
 import service.RegisterResult;
 import service.UserService;
@@ -21,9 +21,11 @@ public class RegisterRequestHandler implements Route {
         Gson serializer = new Gson();
 
         RegisterRequest registerRequest = serializer.fromJson(request.body(), RegisterRequest.class);
+        if (registerRequest.username() == null || registerRequest.password() == null || registerRequest.email() == null) {
+            throw new BadRequestException("One of the fields is empty");
+        }
 
         RegisterResult registerResult = userService.register(registerRequest);
-
         return serializer.toJson(registerResult);
     }
 }

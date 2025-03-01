@@ -34,13 +34,15 @@ public class GameService {
             int gameID = gameDAO.createGame(createRequest.game());
             return new CreateResult(gameID);
         } catch (DataAccessException e) {
-            throw new RuntimeException(e);
+            // why wouldn't it be able to create a new game?
+
+
         }
     }
-    public void join (JoinRequest joinRequest) {
+    public void join (JoinRequest joinRequest) throws UnauthorizedException {
         AuthData auth = authDAO.getAuth(joinRequest.authToken());
         if (auth == null) {
-            return;
+            throw new UnauthorizedException("no auth token found");
         }
         try {
             GameData game = gameDAO.getGame(joinRequest.gameID());

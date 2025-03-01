@@ -13,9 +13,6 @@ public class MemoryGameDAO implements GameDAO{
 
     @Override
     public int createGame(GameData game) throws DataAccessException {
-        if (game == null) {
-            throw new DataAccessException("Game data is null");
-        }
         boolean inserted = this.gamedata.add(game);
         if (!inserted) {
             throw new DataAccessException("Game already exists");
@@ -49,8 +46,5 @@ public class MemoryGameDAO implements GameDAO{
         }
 
         this.gamedata.add(game);
-    }
-    public boolean isEmpty () {
-        return this.gamedata.isEmpty();
     }
 }

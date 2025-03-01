@@ -4,6 +4,7 @@ import dataaccess.MemoryAuthDAO;
 import dataaccess.MemoryUserDAO;
 import model.AuthData;
 import model.UserData;
+
 import java.util.UUID;
 
 public class UserService {
@@ -15,45 +16,40 @@ public class UserService {
         this.authDAO = authDAO;
     }
 
-    public RegisterResult register(RegisterRequest registerRequest) {
+    public RegisterResult register(RegisterRequest registerRequest) throws BadRequestException, DataAccessException {
         if (userDAO.getUser(registerRequest.username()) != null) {
-            // the user already exists
-            throw new RuntimeException("User already exists");
+            throw new DataAccessException("user already exists");
         }
-        // create the new user
         UserData user = new UserData(registerRequest.username(), registerRequest.password(), registerRequest.email());
 
         try {
             userDAO.createUser(user);
         } catch (DataAccessException e) {
-            throw new RuntimeException(e);
+            throw new BadRequestException(e.getMessage());
         }
         return new RegisterResult(user.username(), createAuth(user.username()));
     }
 
-    public LoginResult login(LoginRequest loginRequest) {
+    public LoginResult login(LoginRequest loginRequest) throws UnauthorizedException {
         UserData user = userDAO.getUser(loginRequest.username());
         if(user == null) {
-            // the user doesn't exist
-            return null;
+            throw new UnauthorizedException("user doesn't exist");
         }
-        // check to make sure user password matches the saved password
         if (!user.password().equals(loginRequest.password())) {
-            return null;
+            throw new UnauthorizedException("passwords don't match");
         }
-
         return new LoginResult(user.username(), createAuth(user.username()));
     }
 
-    public void logout (String authToken) {
+    public void logout (String authToken) throws UnauthorizedException{
         AuthData auth = authDAO.getAuth(authToken);
         if (auth == null) {
-            return;
+            throw new UnauthorizedException("auth token is null");
         }
         try {
             authDAO.deleteAuth(auth);
         } catch (DataAccessException e) {
-            throw new RuntimeException(e);
+            throw new BadRequestException(e.getMessage());
         }
     }
     public void clear () {
@@ -61,16 +57,10 @@ public class UserService {
         authDAO.clear();
     }
 
-
-
     public String createAuth (String username) {
         String authToken = UUID.randomUUID().toString();
         AuthData auth = new AuthData(authToken, username);
-        try {
-            authDAO.createAuth(auth);
-        } catch (DataAccessException e){
-            throw new RuntimeException(e);
-        }
+        authDAO.createAuth(auth);
         return authToken;
     }
 }
