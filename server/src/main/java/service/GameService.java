@@ -2,10 +2,8 @@ package service;
 import dataaccess.DataAccessException;
 import dataaccess.MemoryAuthDAO;
 import dataaccess.MemoryGameDAO;
-import model.AuthData;
 import model.GameData;
 import java.util.Collection;
-import java.util.HashSet;
 
 public class GameService {
     MemoryGameDAO gameDAO;
@@ -17,38 +15,32 @@ public class GameService {
     }
 
 
-    public Collection<GameData> list (String authToken) {
-        Collection<GameData> games = new HashSet<>();
-        AuthData auth = authDAO.getAuth(authToken);
-        if (auth == null) {
-            return null;
+    public Collection<GameData> list (String authToken) throws UnauthorizedException {
+        if (authDAO.getAuth(authToken) == null) {
+            throw new UnauthorizedException("invalid auth token");
         }
         return gameDAO.listGames();
     }
-    public CreateResult createGame (CreateRequest createRequest) {
-        AuthData auth = authDAO.getAuth(createRequest.authToken());
-        if (auth == null) {
-            return null;
+    public CreateResult createGame (CreateRequest createRequest) throws DataAccessException, UnauthorizedException {
+        if (authDAO.getAuth(createRequest.authToken()) == null) {
+            throw new UnauthorizedException("invalid auth token");
         }
         try {
             int gameID = gameDAO.createGame(createRequest.game());
             return new CreateResult(gameID);
         } catch (DataAccessException e) {
-            // why wouldn't it be able to create a new game?
-
-
+            throw new DataAccessException("game already exits");
         }
     }
-    public void join (JoinRequest joinRequest) throws UnauthorizedException {
-        AuthData auth = authDAO.getAuth(joinRequest.authToken());
-        if (auth == null) {
+    public void join (JoinRequest joinRequest) throws UnauthorizedException, DataAccessException {
+        if (authDAO.getAuth(joinRequest.authToken()) == null) {
             throw new UnauthorizedException("no auth token found");
         }
         try {
             GameData game = gameDAO.getGame(joinRequest.gameID());
             gameDAO.updateGame(game);
         } catch (DataAccessException e) {
-            throw new RuntimeException(e);
+            throw new DataAccessException("game already exists");
         }
     }
     public void clear () {

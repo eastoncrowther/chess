@@ -35,7 +35,12 @@ class GameServiceTest {
         }
 
         var gameService = new GameService(gameDB, authDB);
-        Collection<GameData> actualGames = gameService.list("1234");
+        Collection<GameData> actualGames = null;
+        try {
+            actualGames = gameService.list("1234");
+        } catch (UnauthorizedException e) {
+            throw new RuntimeException(e);
+        }
 
         Collection<GameData> expectedGames = new HashSet<>(Arrays.asList(
                 new GameData(5, "Easton", "Canon", "Match1", game1),
