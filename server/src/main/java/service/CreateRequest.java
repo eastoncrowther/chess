@@ -1,4 +1,3 @@
 package service;
-import model.GameData;
 
-public record CreateRequest(String authToken, GameData game) {}
+public record CreateRequest(String gameName) {}

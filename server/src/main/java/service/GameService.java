@@ -1,9 +1,12 @@
 package service;
+import chess.ChessBoard;
+import chess.ChessGame;
 import dataaccess.DataAccessException;
 import dataaccess.MemoryAuthDAO;
 import dataaccess.MemoryGameDAO;
 import model.GameData;
 import java.util.Collection;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class GameService {
     MemoryGameDAO gameDAO;
@@ -21,12 +24,24 @@ public class GameService {
         }
         return gameDAO.listGames();
     }
-    public CreateResult createGame (CreateRequest createRequest) throws DataAccessException, UnauthorizedException {
-        if (authDAO.getAuth(createRequest.authToken()) == null) {
+    public CreateResult createGame (String gameName, String authToken) throws DataAccessException, UnauthorizedException {
+        if (authDAO.getAuth(authToken )== null) {
             throw new UnauthorizedException("invalid auth token");
         }
         try {
-            int gameID = gameDAO.createGame(createRequest.game());
+            // create a new chess game
+            ChessGame chessGame = new ChessGame();
+            ChessBoard chessBoard = new ChessBoard();
+            chessBoard.resetBoard();
+            chessGame.setBoard(chessBoard);
+
+            // generate a new game ID
+            int gameID;
+            do {
+                gameID = ThreadLocalRandom.current().nextInt(1, 1000);
+            } while (gameDAO.gameIDinUse(gameID));
+
+            gameDAO.createGame(new GameData(gameID, null, null, gameName, chessGame));
             return new CreateResult(gameID);
         } catch (DataAccessException e) {
             throw new DataAccessException("game already exits");

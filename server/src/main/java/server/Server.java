@@ -25,11 +25,14 @@ public class Server {
         Spark.port(desiredPort);
         Spark.staticFiles.location("web");
 
-        // Register endpoints
+        // user endpoints
         Spark.post("/session", new LoginRequestHandler(userService));
         Spark.post("/user", new RegisterRequestHandler(userService));
         Spark.delete("/session", new LogoutRequestHandler(userService));
         Spark.delete("/db", new ClearHandler(userService, gameService));
+
+        // game endpoints
+        Spark.post("/game", new CreateGameHandler(gameService));
 
         // Exception handling
         Spark.exception(BadRequestException.class, new HandleExceptions());
