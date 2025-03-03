@@ -6,8 +6,6 @@ import model.AuthData;
 import model.GameData;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -139,7 +137,88 @@ class GameServiceTest {
 
         Assertions.assertTrue(gameDB.isEmpty());
         Assertions.assertTrue(authDB.isEmpty());
+    }
+    @Test
+    void listUnauthorized() {
+        MemoryGameDAO gameDB = new MemoryGameDAO();
+        MemoryAuthDAO authDB = new MemoryAuthDAO();
+        GameService gameService = new GameService(gameDB, authDB);
 
+        assertThrows(UnauthorizedException.class, () -> gameService.list("invalidToken"));
+    }
 
+    @Test
+    void createGameWithInvalidToken() {
+        MemoryGameDAO gameDB = new MemoryGameDAO();
+        MemoryAuthDAO authDB = new MemoryAuthDAO();
+        GameService gameService = new GameService(gameDB, authDB);
+
+        assertThrows(UnauthorizedException.class, () -> {
+            try {
+                gameService.createGame("match1", "invalidToken");
+            } catch (DataAccessException e) {
+                fail("Unexpected DataAccessException: " + e.getMessage());
+            }
+        });
+    }
+
+    @Test
+    void joinGameWithInvalidGameID() {
+        MemoryGameDAO gameDB = new MemoryGameDAO();
+        MemoryAuthDAO authDB = new MemoryAuthDAO();
+        GameService gameService = new GameService(gameDB, authDB);
+
+        authDB.createAuth(new AuthData("1234", "easton"));
+
+        assertThrows(BadRequestException.class, () -> {
+            try {
+                gameService.join(new JoinRequest("WHITE", 9999), "1234");
+            } catch (UnauthorizedException e) {
+                fail("Unexpected UnauthorizedException: " + e.getMessage());
+            }
+        });
+    }
+
+    @Test
+    void joinGameWithInvalidToken() {
+        MemoryGameDAO gameDB = new MemoryGameDAO();
+        MemoryAuthDAO authDB = new MemoryAuthDAO();
+        GameService gameService = new GameService(gameDB, authDB);
+
+        try {
+            gameDB.createGame(new GameData(5, null, "Canon", "Match1", new ChessGame()));
+        } catch (DataAccessException e) {
+            fail("Unexpected DataAccessException: " + e.getMessage());
+        }
+
+        assertThrows(UnauthorizedException.class, () -> {
+            try {
+                gameService.join(new JoinRequest("WHITE", 5), "invalidToken");
+            } catch (DataAccessException e) {
+                fail("Unexpected DataAccessException: " + e.getMessage());
+            }
+        });
+    }
+
+    @Test
+    void joinGameWithInvalidColor() {
+        MemoryGameDAO gameDB = new MemoryGameDAO();
+        MemoryAuthDAO authDB = new MemoryAuthDAO();
+        GameService gameService = new GameService(gameDB, authDB);
+
+        authDB.createAuth(new AuthData("1234", "easton"));
+        try {
+            gameDB.createGame(new GameData(5, null, "Canon", "Match1", new ChessGame()));
+        } catch (DataAccessException e) {
+            fail("Unexpected DataAccessException: " + e.getMessage());
+        }
+
+        assertThrows(BadRequestException.class, () -> {
+            try {
+                gameService.join(new JoinRequest("GREEN", 5), "1234");
+            } catch (DataAccessException | UnauthorizedException e) {
+                fail("Unexpected Exception: " + e.getMessage());
+            }
+        });
     }
 }

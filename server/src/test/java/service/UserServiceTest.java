@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Assertions;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 class UserServiceTest {
 
     @Test
@@ -105,5 +107,65 @@ class UserServiceTest {
         // check if the userDB and authDB are empty
         Assertions.assertTrue(userDB.isEmpty());
         Assertions.assertTrue(authDB.isEmpty());
+    }
+    @Test
+    @DisplayName("Test register service with duplicate username")
+    public void registerDuplicateUsername() {
+        var userDB = new MemoryUserDAO();
+        var authDB = new MemoryAuthDAO();
+        var userService = new UserService(userDB, authDB);
+
+        try {
+            userService.register(new RegisterRequest("Easton", "123", "easton.crowther@gmail.com"));
+        } catch (Exception e) {
+            fail("Unexpected exception: " + e.getMessage());
+        }
+
+        // Attempt to register with the same username
+        Assertions.assertThrows(DataAccessException.class, () ->
+                userService.register(new RegisterRequest("Easton", "456", "different.email@gmail.com"))
+        );
+    }
+
+    @Test
+    @DisplayName("Test login with incorrect password")
+    public void loginIncorrectPassword() {
+        var userDB = new MemoryUserDAO();
+        var authDB = new MemoryAuthDAO();
+        var userService = new UserService(userDB, authDB);
+
+        try {
+            userDB.createUser(new UserData("Easton", "123", "easton.crowther@gmail.com"));
+        } catch (DataAccessException e) {
+            fail("Unexpected exception: " + e.getMessage());
+        }
+
+        Assertions.assertThrows(UnauthorizedException.class, () ->
+                userService.login(new LoginRequest("Easton", "wrongpassword"))
+        );
+    }
+
+    @Test
+    @DisplayName("Test login with non-existent username")
+    public void loginNonExistentUser() {
+        var userDB = new MemoryUserDAO();
+        var authDB = new MemoryAuthDAO();
+        var userService = new UserService(userDB, authDB);
+
+        Assertions.assertThrows(UnauthorizedException.class, () ->
+                userService.login(new LoginRequest("NonExistentUser", "password"))
+        );
+    }
+
+    @Test
+    @DisplayName("Test logout with invalid auth token")
+    public void logoutInvalidAuthToken() {
+        var userDB = new MemoryUserDAO();
+        var authDB = new MemoryAuthDAO();
+        var userService = new UserService(userDB, authDB);
+
+        Assertions.assertThrows(UnauthorizedException.class, () ->
+                userService.logout("invalidToken")
+        );
     }
 }

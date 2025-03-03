@@ -55,7 +55,6 @@ public class MemoryGameDAO implements GameDAO{
         }
         return false;
     }
-    // checks if the database is empty
     public boolean isEmpty () {
         return this.gamedata.isEmpty();
     }

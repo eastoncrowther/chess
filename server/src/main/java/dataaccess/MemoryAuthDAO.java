@@ -29,7 +29,6 @@ public class MemoryAuthDAO implements AuthDAO{
             throw new DataAccessException("auth not found");
         }
     }
-    // checks if the database is empty
     public boolean isEmpty () {
         return this.authdata.isEmpty();
     }
