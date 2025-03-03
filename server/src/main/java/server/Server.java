@@ -10,8 +10,6 @@ import service.UnauthorizedException;
 import service.UserService;
 import spark.Spark;
 
-import java.util.Map;
-
 public class Server {
     private final MemoryAuthDAO auths = new MemoryAuthDAO();
     private final MemoryGameDAO games = new MemoryGameDAO();
@@ -39,9 +37,7 @@ public class Server {
 
         // Exception handling
         Spark.exception(BadRequestException.class, new HandleExceptions());
-
         Spark.exception(UnauthorizedException.class, new HandleExceptions());
-
         Spark.exception(Exception.class, new HandleExceptions());
 
         Spark.awaitInitialization();

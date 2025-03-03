@@ -1,6 +1,8 @@
 package chess;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Objects;
 
 /**
@@ -57,6 +59,18 @@ public class ChessBoard implements Cloneable{
         return null;
     }
 
+    public ChessPosition getPosition(ChessPiece piece) {
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                if (board[row][col] == piece) {
+                    return new ChessPosition(row + 1, col + 1);
+                }
+            }
+        }
+        return null;
+    }
+
+
 
     /**
      * Sets the board to the default starting board
@@ -98,6 +112,20 @@ public class ChessBoard implements Cloneable{
             addPiece(new ChessPosition(rowIndex,colIndex), new ChessPiece(teamColor, ChessPiece.PieceType.PAWN));
         }
     }
+
+    public Collection<ChessPiece> getAllPieces() {
+        Collection<ChessPiece> pieces = new ArrayList<>();
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                ChessPiece piece = board[row][col];
+                if (piece != null) {
+                    pieces.add(piece);
+                }
+            }
+        }
+        return pieces;
+    }
+
     @Override
     public ChessBoard clone() {
         try {
