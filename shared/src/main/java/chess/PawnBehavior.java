@@ -32,7 +32,9 @@ public class PawnBehavior implements PieceBehavior {
         }
     }
 
-    private void addDiagonalCaptures(ChessBoard board, ChessPosition myPosition, int direction, Collection<ChessMove> pawnMoves, ChessGame.TeamColor color) {
+    private void addDiagonalCaptures(ChessBoard board, ChessPosition myPosition,
+                                     int direction, Collection<ChessMove> pawnMoves,
+                                     ChessGame.TeamColor color) {
         int[][] diagonals = {{direction, 1}, {direction, -1}};
         for (int[] diagonal : diagonals) {
             int row = myPosition.getRow() + diagonal[0];
@@ -47,8 +49,11 @@ public class PawnBehavior implements PieceBehavior {
         }
     }
 
-    private boolean addMoveIfValid(ChessBoard board, ChessPosition myPosition, int row, int col, Collection<ChessMove> pawnMoves) {
-        if (!inBounds(row, col)) return false;
+    private boolean addMoveIfValid(ChessBoard board, ChessPosition myPosition,
+                                   int row, int col, Collection<ChessMove> pawnMoves) {
+        if (!inBounds(row, col)) {
+            return false;
+        }
         ChessPosition nextPosition = new ChessPosition(row, col);
         if (board.getPiece(nextPosition) == null) {
             addPawnMove(myPosition, nextPosition, pawnMoves);
