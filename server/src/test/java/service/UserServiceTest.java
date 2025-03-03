@@ -89,8 +89,8 @@ class UserServiceTest {
     @Test
     @DisplayName("Test clear")
     public void clear () {
-        var userDB = new MemoryUserDAO();
-        var authDB = new MemoryAuthDAO();
+        MemoryUserDAO userDB = new MemoryUserDAO();
+        MemoryAuthDAO authDB = new MemoryAuthDAO();
 
         try {
             userDB.createUser(new UserData("Easton", "123", "easton.crowther@gmail.com"));
@@ -98,7 +98,7 @@ class UserServiceTest {
             throw new RuntimeException(e);
         }
 
-        var userService = new UserService(userDB, authDB);
+        UserService userService = new UserService(userDB, authDB);
 
         userService.clear();
 

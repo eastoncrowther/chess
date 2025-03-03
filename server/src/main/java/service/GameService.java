@@ -7,28 +7,27 @@ import dataaccess.MemoryGameDAO;
 import model.AuthData;
 import model.GameData;
 import java.util.Collection;
-import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class GameService {
     MemoryGameDAO gameDAO;
     MemoryAuthDAO authDAO;
 
-    public GameService (MemoryGameDAO gameDAO, MemoryAuthDAO authDAO) {
+    public GameService(MemoryGameDAO gameDAO, MemoryAuthDAO authDAO) {
         this.gameDAO = gameDAO;
         this.authDAO = authDAO;
     }
 
-
-    public ListResult list (String authToken) throws UnauthorizedException {
+    public ListResult list(String authToken) throws UnauthorizedException {
         if (authDAO.getAuth(authToken) == null) {
             throw new UnauthorizedException("invalid auth token");
         }
         Collection<GameData> games = gameDAO.listGames();
         return new ListResult(games);
     }
-    public CreateResult createGame (String gameName, String authToken) throws DataAccessException, UnauthorizedException {
-        if (authDAO.getAuth(authToken )== null) {
+
+    public CreateResult createGame(String gameName, String authToken) throws DataAccessException, UnauthorizedException {
+        if (authDAO.getAuth(authToken) == null) {
             throw new UnauthorizedException("invalid auth token");
         }
         try {
@@ -50,7 +49,8 @@ public class GameService {
             throw new DataAccessException("game already exits");
         }
     }
-    public void join (JoinRequest joinRequest, String authToken) throws UnauthorizedException, DataAccessException {
+
+    public void join(JoinRequest joinRequest, String authToken) throws UnauthorizedException, DataAccessException {
         AuthData auth = authDAO.getAuth(authToken);
         if (auth == null) {
             throw new UnauthorizedException("no auth token found");
@@ -84,7 +84,8 @@ public class GameService {
                 break;
             default:
                 throw new BadRequestException("invalid team color requested");
-        };
+        }
+        ;
 
         try {
             gameDAO.updateGame(new GameData(joinRequest.gameID(), whiteTeam, blackTeam, gameName, game.game()));
@@ -93,7 +94,7 @@ public class GameService {
         }
     }
 
-    public void clear () {
+    public void clear() {
         gameDAO.clear();
         authDAO.clear();
     }
