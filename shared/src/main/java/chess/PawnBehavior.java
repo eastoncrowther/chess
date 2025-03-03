@@ -7,141 +7,73 @@ public class PawnBehavior implements PieceBehavior {
     @Override
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
         Collection<ChessMove> pawnMoves = new ArrayList<>();
-        if (board.getPiece(myPosition).getTeamColor() == ChessGame.TeamColor.WHITE) {
-            whitePawnMoves(board, myPosition, pawnMoves);
+        ChessGame.TeamColor color = board.getPiece(myPosition).getTeamColor();
+        int direction = (color == ChessGame.TeamColor.WHITE) ? 1 : -1;
+        int startRow = (color == ChessGame.TeamColor.WHITE) ? 2 : 7;
+
+        if (myPosition.getRow() == startRow) {
+            moveTwo(board, myPosition, direction, pawnMoves);
+        } else {
+            moveOne(board, myPosition, direction, pawnMoves);
         }
-        else {
-            blackPawnMoves(board, myPosition, pawnMoves);
-        }
+
+        addDiagonalCaptures(board, myPosition, direction, pawnMoves, color);
         return pawnMoves;
     }
 
-    public void whitePawnMoves (ChessBoard board, ChessPosition myPosition, Collection<ChessMove> pawnMoves) {
-        if (myPosition.getRow() == 2) {
-            moveTwo(board, myPosition, 1, pawnMoves);
-        }
-        else {
-            moveOne(board, myPosition, myPosition, 1, pawnMoves);
-        }
-        int[][] diagonals = {
-                {1, 1},
-                {1, -1}
-        };
-        for (int[] diagonal : diagonals) {
-            int row = myPosition.getRow() + diagonal[0];
-            int col = myPosition.getColumn() + diagonal[1];
-
-            // check to see if the position is in bounds
-            if (inBounds(row, col)) {
-                ChessPosition nextPosition = new ChessPosition(row, col);
-
-                // check to see if there is a piece
-                if (board.getPiece(nextPosition) != null && board.getPiece(nextPosition).getTeamColor() != ChessGame.TeamColor.WHITE) {
-                    // add the move
-                    if (endOfBoard(nextPosition.getRow())) {
-                        pawnMoves.add(new ChessMove(myPosition, nextPosition, ChessPiece.PieceType.QUEEN));
-                        pawnMoves.add(new ChessMove(myPosition, nextPosition, ChessPiece.PieceType.BISHOP));
-                        pawnMoves.add(new ChessMove(myPosition, nextPosition, ChessPiece.PieceType.KNIGHT));
-                        pawnMoves.add(new ChessMove(myPosition, nextPosition, ChessPiece.PieceType.ROOK));
-                    }
-                    else {
-                        pawnMoves.add(new ChessMove(myPosition, nextPosition, null));
-                    }
-                }
-            }
-        }
-    }
-    public void blackPawnMoves (ChessBoard board, ChessPosition myPosition, Collection<ChessMove> pawnMoves) {
-        if (myPosition.getRow() == 7) {
-            moveTwo(board, myPosition, -1, pawnMoves);
-        }
-        else {
-            moveOne(board, myPosition, myPosition, -1, pawnMoves);
-        }
-        int[][] diagonals = {
-                {-1, 1},
-                {-1, -1}
-        };
-        for (int[] diagonal : diagonals) {
-            int row = myPosition.getRow() + diagonal[0];
-            int col = myPosition.getColumn() + diagonal[1];
-
-            // check to see if the position is in bounds
-            if (inBounds(row, col)) {
-                ChessPosition nextPosition = new ChessPosition(row, col);
-
-                // check to see if there is a piece
-                if (board.getPiece(nextPosition) != null && board.getPiece(nextPosition).getTeamColor() != ChessGame.TeamColor.BLACK) {
-                    // add the move
-                    if (endOfBoard(nextPosition.getRow())) {
-                        pawnMoves.add(new ChessMove(myPosition, nextPosition, ChessPiece.PieceType.QUEEN));
-                        pawnMoves.add(new ChessMove(myPosition, nextPosition, ChessPiece.PieceType.BISHOP));
-                        pawnMoves.add(new ChessMove(myPosition, nextPosition, ChessPiece.PieceType.KNIGHT));
-                        pawnMoves.add(new ChessMove(myPosition, nextPosition, ChessPiece.PieceType.ROOK));
-                    }
-                    else {
-                        pawnMoves.add(new ChessMove(myPosition, nextPosition, null));
-                    }
-                }
-            }
-        }
+    private void moveOne(ChessBoard board, ChessPosition myPosition, int direction, Collection<ChessMove> pawnMoves) {
+        addMoveIfValid(board, myPosition, myPosition.getRow() + direction, myPosition.getColumn(), pawnMoves);
     }
 
-    public void moveOne (ChessBoard board, ChessPosition myPosition, ChessPosition initialPosition, int direction, Collection<ChessMove> pawnMoves) {
-        int row = initialPosition.getRow() + direction;
-        int col = initialPosition.getColumn();
-
-        // check to see if the position is in bounds
-        if (inBounds(row, col)) {
-            // make a new position
-            ChessPosition nextPosition = new ChessPosition(row, col);
-
-            // check if there is a piece on the position
-            if (board.getPiece(nextPosition) == null) {
-                if (endOfBoard(nextPosition.getRow())) {
-                    pawnMoves.add(new ChessMove(myPosition, nextPosition, ChessPiece.PieceType.QUEEN));
-                    pawnMoves.add(new ChessMove(myPosition, nextPosition, ChessPiece.PieceType.BISHOP));
-                    pawnMoves.add(new ChessMove(myPosition, nextPosition, ChessPiece.PieceType.KNIGHT));
-                    pawnMoves.add(new ChessMove(myPosition, nextPosition, ChessPiece.PieceType.ROOK));
-                }
-                else {
-                    pawnMoves.add(new ChessMove(myPosition, nextPosition, null));
-                }
-            }
-        }
-    }
-
-    public void moveTwo (ChessBoard board, ChessPosition myPosition, int direction, Collection<ChessMove> pawnMoves) {
+    private void moveTwo(ChessBoard board, ChessPosition myPosition, int direction, Collection<ChessMove> pawnMoves) {
         int row = myPosition.getRow() + direction;
-        int col = myPosition.getColumn();
+        if (addMoveIfValid(board, myPosition, row, myPosition.getColumn(), pawnMoves)) {
+            addMoveIfValid(board, myPosition, row + direction, myPosition.getColumn(), pawnMoves);
+        }
+    }
 
-        // check to see if the position is in bounds
-        if (inBounds(row, col)) {
-            // make a new position
+    private void addDiagonalCaptures(ChessBoard board, ChessPosition myPosition, int direction, Collection<ChessMove> pawnMoves, ChessGame.TeamColor color) {
+        int[][] diagonals = {{direction, 1}, {direction, -1}};
+        for (int[] diagonal : diagonals) {
+            int row = myPosition.getRow() + diagonal[0];
+            int col = myPosition.getColumn() + diagonal[1];
             ChessPosition nextPosition = new ChessPosition(row, col);
-
-            // check if there is a piece on the position
-            if (board.getPiece(nextPosition) == null) {
-                pawnMoves.add(new ChessMove(myPosition, nextPosition, null));
-                moveOne(board, myPosition, nextPosition, direction, pawnMoves);
+            if (inBounds(row, col)) {
+                ChessPiece piece = board.getPiece(nextPosition);
+                if (piece != null && piece.getTeamColor() != color) {
+                    addPawnMove(myPosition, nextPosition, pawnMoves);
+                }
             }
         }
     }
 
-
-
-
-    public boolean endOfBoard (int row) {
-        if (row == 8 || row == 1) {
+    private boolean addMoveIfValid(ChessBoard board, ChessPosition myPosition, int row, int col, Collection<ChessMove> pawnMoves) {
+        if (!inBounds(row, col)) return false;
+        ChessPosition nextPosition = new ChessPosition(row, col);
+        if (board.getPiece(nextPosition) == null) {
+            addPawnMove(myPosition, nextPosition, pawnMoves);
             return true;
         }
         return false;
     }
 
-    public boolean inBounds (int row, int col) {
-        if (row < 1 || row > 8 || col < 1 || col > 8) {
-            return false;
+    private void addPawnMove(ChessPosition start, ChessPosition end, Collection<ChessMove> moves) {
+        if (endOfBoard(end.getRow())) {
+            moves.add(new ChessMove(start, end, ChessPiece.PieceType.QUEEN));
+            moves.add(new ChessMove(start, end, ChessPiece.PieceType.BISHOP));
+            moves.add(new ChessMove(start, end, ChessPiece.PieceType.KNIGHT));
+            moves.add(new ChessMove(start, end, ChessPiece.PieceType.ROOK));
+        } else {
+            moves.add(new ChessMove(start, end, null));
         }
-        return true;
+    }
+
+    private boolean endOfBoard(int row) {
+        return row == 8 || row == 1;
+    }
+
+    private boolean inBounds(int row, int col) {
+        return row >= 1 && row <= 8 && col >= 1 && col <= 8;
     }
 }
+
