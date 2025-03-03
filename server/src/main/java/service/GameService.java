@@ -4,8 +4,10 @@ import chess.ChessGame;
 import dataaccess.DataAccessException;
 import dataaccess.MemoryAuthDAO;
 import dataaccess.MemoryGameDAO;
+import model.AuthData;
 import model.GameData;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class GameService {
@@ -18,11 +20,12 @@ public class GameService {
     }
 
 
-    public Collection<GameData> list (String authToken) throws UnauthorizedException {
+    public ListResult list (String authToken) throws UnauthorizedException {
         if (authDAO.getAuth(authToken) == null) {
             throw new UnauthorizedException("invalid auth token");
         }
-        return gameDAO.listGames();
+        Collection<GameData> games = gameDAO.listGames();
+        return new ListResult(games);
     }
     public CreateResult createGame (String gameName, String authToken) throws DataAccessException, UnauthorizedException {
         if (authDAO.getAuth(authToken )== null) {
@@ -47,17 +50,49 @@ public class GameService {
             throw new DataAccessException("game already exits");
         }
     }
-    public void join (JoinRequest joinRequest) throws UnauthorizedException, DataAccessException {
-        if (authDAO.getAuth(joinRequest.authToken()) == null) {
+    public void join (JoinRequest joinRequest, String authToken) throws UnauthorizedException, DataAccessException {
+        AuthData auth = authDAO.getAuth(authToken);
+        if (auth == null) {
             throw new UnauthorizedException("no auth token found");
         }
+
+        GameData game = null;
         try {
-            GameData game = gameDAO.getGame(joinRequest.gameID());
-            gameDAO.updateGame(game);
+            game = gameDAO.getGame(joinRequest.gameID());
         } catch (DataAccessException e) {
-            throw new DataAccessException("game already exists");
+            throw new BadRequestException("game ID not found");
+        }
+
+        String whiteTeam = game.whiteUsername();
+        String blackTeam = game.blackUsername();
+        String gameName = game.gameName();
+
+        switch (joinRequest.playerColor()) {
+            case "WHITE":
+                if (whiteTeam == null || whiteTeam.equals(auth.username())) {
+                    whiteTeam = auth.username();
+                } else {
+                    throw new DataAccessException("another player occupies this spot");
+                }
+                break;
+            case "BLACK":
+                if (blackTeam == null || blackTeam.equals(auth.username())) {
+                    blackTeam = auth.username();
+                } else {
+                    throw new DataAccessException("another player occupies this spot");
+                }
+                break;
+            default:
+                throw new BadRequestException("invalid team color requested");
+        };
+
+        try {
+            gameDAO.updateGame(new GameData(joinRequest.gameID(), whiteTeam, blackTeam, gameName, game.game()));
+        } catch (DataAccessException e) {
+            throw new BadRequestException(e.getMessage());
         }
     }
+
     public void clear () {
         gameDAO.clear();
         authDAO.clear();

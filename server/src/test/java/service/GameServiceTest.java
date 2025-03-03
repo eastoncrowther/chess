@@ -35,7 +35,7 @@ class GameServiceTest {
         }
 
         var gameService = new GameService(gameDB, authDB);
-        Collection<GameData> actualGames = null;
+        ListResult actualGames = null;
         try {
             actualGames = gameService.list("1234");
         } catch (UnauthorizedException e) {

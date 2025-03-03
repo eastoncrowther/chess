@@ -33,6 +33,9 @@ public class Server {
 
         // game endpoints
         Spark.post("/game", new CreateGameHandler(gameService));
+        Spark.get("/game", new ListGameHandler(gameService));
+        Spark.put("/game", new JoinGameHandler(gameService));
+
 
         // Exception handling
         Spark.exception(BadRequestException.class, new HandleExceptions());
