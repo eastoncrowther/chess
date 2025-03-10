@@ -1,6 +1,5 @@
 package server;
 
-import com.google.gson.Gson;
 import dataaccess.MemoryAuthDAO;
 import dataaccess.MemoryGameDAO;
 import dataaccess.MemoryUserDAO;
@@ -11,13 +10,13 @@ import service.UserService;
 import spark.Spark;
 
 public class Server {
+    // these types can be switched to use Sql implementations
     private final MemoryAuthDAO auths = new MemoryAuthDAO();
     private final MemoryGameDAO games = new MemoryGameDAO();
     private final MemoryUserDAO users = new MemoryUserDAO();
 
     private final UserService userService = new UserService(users, auths);
     private final GameService gameService = new GameService(games, auths);
-    private final Gson gson = new Gson();
 
     public int run(int desiredPort) {
         Spark.port(desiredPort);

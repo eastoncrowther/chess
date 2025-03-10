@@ -1,10 +1,11 @@
 package dataaccess;
 
-import model.AuthData;
-import java.sql.*;
+import model.UserData;
 
-public class SqlAuthDao implements AuthDAO {
-    public SqlAuthDao () throws Exception {
+import java.sql.SQLException;
+
+public class SqlUserDAO implements UserDAO {
+    public SqlUserDAO () throws Exception {
         configureDatabase();
     }
 
@@ -14,26 +15,22 @@ public class SqlAuthDao implements AuthDAO {
     }
 
     @Override
-    public void createAuth(AuthData auth) throws DataAccessException {
+    public void createUser(UserData user) throws DataAccessException {
 
     }
 
     @Override
-    public AuthData getAuth(String authToken) {
+    public UserData getUser(String username) {
         return null;
-    }
-
-    @Override
-    public void deleteAuth(AuthData auth) throws DataAccessException {
-
     }
 
     private final String[] createStatements = {
             """
-            CREATE TABLE if NOT EXISTS authTable
+            CREATE TABLE if NOT EXISTS userTable
             (
             'username' VARCHAR(255) NOT NULL,
-            'authToken' VARCHAR(255) NOT NULL,
+            'password' VARCHAR(255) NOT NULL,
+            'password' VARCHAR(255) NOT NULL
             )
             """
     };
