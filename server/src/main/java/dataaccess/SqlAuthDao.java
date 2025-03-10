@@ -1,13 +1,18 @@
 package dataaccess;
 
 import model.AuthData;
+import java.sql.*;
+import java.util.Properties;
 
 public class SqlAuthDao implements AuthDAO {
+    public SqlAuthDao () throws Exception {
+        try {
+            DatabaseManager.createDatabase();
+        } catch (DataAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-
-
-
-    
     @Override
     public void clear() {
 
