@@ -1,17 +1,15 @@
 package service;
-import dataaccess.DataAccessException;
-import dataaccess.MemoryAuthDAO;
-import dataaccess.MemoryUserDAO;
+import dataaccess.*;
 import model.AuthData;
 import model.UserData;
 
 import java.util.UUID;
 
 public class UserService {
-    MemoryUserDAO userDAO;
-    MemoryAuthDAO authDAO;
+    UserDAO userDAO;
+    AuthDAO authDAO;
 
-    public UserService (MemoryUserDAO userDAO, MemoryAuthDAO authDAO) {
+    public UserService (UserDAO userDAO, AuthDAO authDAO) {
         this.userDAO = userDAO;
         this.authDAO = authDAO;
     }
@@ -30,7 +28,7 @@ public class UserService {
         return new RegisterResult(user.username(), createAuth(user.username()));
     }
 
-    public LoginResult login(LoginRequest loginRequest) throws UnauthorizedException {
+    public LoginResult login(LoginRequest loginRequest) throws UnauthorizedException, DataAccessException {
         UserData user = userDAO.getUser(loginRequest.username());
         if(user == null) {
             throw new UnauthorizedException("user doesn't exist");
@@ -57,7 +55,7 @@ public class UserService {
         authDAO.clear();
     }
 
-    public String createAuth (String username) {
+    public String createAuth (String username) throws DataAccessException {
         String authToken = UUID.randomUUID().toString();
         AuthData auth = new AuthData(authToken, username);
         authDAO.createAuth(auth);

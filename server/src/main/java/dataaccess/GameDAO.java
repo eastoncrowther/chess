@@ -8,4 +8,5 @@ public interface GameDAO {
     public GameData getGame (int gameID) throws DataAccessException;
     public Collection<GameData> listGames();
     public void updateGame (GameData game) throws DataAccessException;
+    public boolean gameIDinUse (int gameID);
 }

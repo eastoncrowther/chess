@@ -1,19 +1,17 @@
 package service;
 import chess.ChessBoard;
 import chess.ChessGame;
-import dataaccess.DataAccessException;
-import dataaccess.MemoryAuthDAO;
-import dataaccess.MemoryGameDAO;
+import dataaccess.*;
 import model.AuthData;
 import model.GameData;
 import java.util.Collection;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class GameService {
-    MemoryGameDAO gameDAO;
-    MemoryAuthDAO authDAO;
+    GameDAO gameDAO;
+    AuthDAO authDAO;
 
-    public GameService(MemoryGameDAO gameDAO, MemoryAuthDAO authDAO) {
+    public GameService(GameDAO gameDAO, AuthDAO authDAO) {
         this.gameDAO = gameDAO;
         this.authDAO = authDAO;
     }
