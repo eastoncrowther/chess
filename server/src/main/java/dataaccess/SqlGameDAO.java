@@ -5,8 +5,10 @@ import com.google.gson.Gson;
 import model.AuthData;
 import model.GameData;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 
 public class SqlGameDAO implements GameDAO {
@@ -56,14 +58,7 @@ public class SqlGameDAO implements GameDAO {
 
                 try (var results = statement.executeQuery()) {
                     results.next();
-                    String whiteUsername = results.getString("whiteUsername");
-                    String blackUsername = results.getString("blackUsername");
-                    String gameName = results.getString("gameName");
-
-                    Gson serializer = new Gson();
-                    ChessGame chessGame = serializer.fromJson(results.getString("chessGame"), ChessGame.class);
-
-                    return new GameData(gameID, whiteUsername, blackUsername, gameName, chessGame);
+                    return readGameData(results);
                 }
             }
         } catch (SQLException | DataAccessException e) {
@@ -73,8 +68,37 @@ public class SqlGameDAO implements GameDAO {
 
     @Override
     public Collection<GameData> listGames() {
-        return List.of();
+        Collection<GameData> retrievedGames = new HashSet<>();
+
+        var statementString = "SELECT * FROM gameTable;";
+
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var statement = conn.prepareStatement(statementString)) {
+                try (var results = statement.executeQuery()) {
+                    while (results.next()) {
+                        retrievedGames.add(readGameData(results));
+                    }
+                    return retrievedGames;
+                }
+            }
+        } catch (SQLException | DataAccessException e) {
+            throw new RuntimeException("Error listing games");
+        }
     }
+
+    private GameData readGameData(ResultSet results) throws SQLException {
+
+        int gameID = results.getInt("gameID");
+        String whiteUsername = results.getString("whiteUsername");
+        String blackUsername = results.getString("blackUsername");
+        String gameName = results.getString("gameName");
+
+        Gson serializer = new Gson();
+        ChessGame chessGame = serializer.fromJson(results.getString("chessGame"), ChessGame.class);
+
+        return new GameData(gameID, whiteUsername, blackUsername, gameName, chessGame);
+    }
+
 
     @Override
     public void updateGame(GameData game) throws DataAccessException {
