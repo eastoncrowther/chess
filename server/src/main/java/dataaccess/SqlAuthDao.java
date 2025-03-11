@@ -12,21 +12,19 @@ public class SqlAuthDao implements AuthDAO {
 
     @Override
     public void clear() {
-        var statementString = "TRUNCATE authTable";
-        try (var conn = DatabaseManager.getConnection()) {
-            try (var statement = conn.prepareStatement(statementString)) {
-                statement.executeUpdate();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        } catch (SQLException | DataAccessException e) {}
+        String statementString = "TRUNCATE authTable";
+
+        try (var conn = DatabaseManager.getConnection();
+             var statement = conn.prepareStatement(statementString)) {
+            statement.executeUpdate();
+        } catch (SQLException | DataAccessException e) {
+            throw new RuntimeException("Error clearing authTable", e);
+        }
     }
+
 
     @Override
     public void createAuth(AuthData auth) throws DataAccessException {
-        System.out.println("createAuth() called with username: " + auth.username() + " and authToken: " + auth.authToken());
-
-
         var statementString = "INSERT INTO authTable (username, authToken) VALUES (?, ?)";
 
         try (var conn = DatabaseManager.getConnection()) {
@@ -35,12 +33,7 @@ public class SqlAuthDao implements AuthDAO {
                 statement.setString(2, auth.authToken());
 
                 System.out.println("Executing: " + statement);
-                int rowsAffected = statement.executeUpdate();
-                System.out.println("Rows inserted: " + rowsAffected);
-
-                if (rowsAffected == 0) {
-                    throw new DataAccessException("No rows inserted!");
-                }
+                statement.executeUpdate();
             }
         } catch (SQLException | DataAccessException e) {
             throw new DataAccessException("Error inserting auth data");
@@ -49,12 +42,33 @@ public class SqlAuthDao implements AuthDAO {
 
     @Override
     public AuthData getAuth(String authToken) {
-        return null;
+        var statementString = "SELECT username, authToken FROM authTable WHERE authToken = ?";
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var statement = conn.prepareStatement(statementString)) {
+                statement.setString(1, authToken);
+
+                try (var results = statement.executeQuery()) {
+                    results.next();
+                    String username = results.getString("username");
+                    return new AuthData(authToken, username);
+                }
+            }
+        } catch (SQLException | DataAccessException e) {
+            return null;
+        }
     }
 
     @Override
     public void deleteAuth(AuthData auth) throws DataAccessException {
-
+        var statementString = "DELETE FROM authTable WHERE authToken = ?";
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var statement = conn.prepareStatement(statementString)) {
+               statement.setString(1, auth.authToken());
+               statement.executeUpdate();
+            }
+        } catch (SQLException | DataAccessException e) {
+            throw new DataAccessException("authToken not found");
+        }
     }
 
     private final String[] createStatements = {

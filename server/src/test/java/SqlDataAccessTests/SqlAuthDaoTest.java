@@ -3,8 +3,8 @@ package SqlDataAccessTests;
 import dataaccess.*;
 import model.AuthData;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
@@ -42,7 +42,7 @@ class SqlAuthDaoTest {
 
             if (resultSet.next()) {
                 int count = resultSet.getInt(1);
-                assertEquals(0, count, "authTable should be empty after clear() but contains records.");
+                Assertions.assertEquals(0, count, "authTable should be empty after clear() but contains records.");
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -74,23 +74,46 @@ class SqlAuthDaoTest {
         }
 
         // Ensure data was retrieved correctly
-        assertNotNull(retrievedUsername, "No data found for the given username.");
-        assertNotNull(retrievedToken, "No auth token found for the given username.");
+        Assertions.assertNotNull(retrievedUsername, "No data found for the given username.");
+        Assertions.assertNotNull(retrievedToken, "No auth token found for the given username.");
 
         // Compare expected and actual values
-        assertEquals(newAuth.username(), retrievedUsername, "Usernames do not match.");
-        assertEquals(newAuth.authToken(), retrievedToken, "Auth tokens do not match.");
+        Assertions.assertEquals(newAuth.username(), retrievedUsername, "Usernames do not match.");
+        Assertions.assertEquals(newAuth.authToken(), retrievedToken, "Auth tokens do not match.");
     }
 
 
     @Test
-    public void getAuth() {
-        // Implement test logic here
+    public void getAuth() throws DataAccessException {
+        AuthData newAuth = new AuthData("1234", "easton");
+
+        sqlAuthDao.createAuth(newAuth);
+
+        AuthData retrievedAuth = sqlAuthDao.getAuth("1234");
+
+        Assertions.assertEquals(newAuth, retrievedAuth);
     }
 
     @Test
-    public void deleteAuth() {
-        // Implement test logic here
+    public void deleteAuth() throws DataAccessException, SQLException {
+        AuthData newAuth = new AuthData("1234", "easton");
+
+        sqlAuthDao.createAuth(newAuth);
+
+        sqlAuthDao.deleteAuth(newAuth);
+
+        // make sure the authToken was deleted
+        String statementString = "SELECT username, authToken FROM authTable WHERE authToken = 1234";
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var statement = conn.prepareStatement(statementString)) {
+                try (var results = statement.executeQuery()) {
+                    // there should be no results
+                    Assertions.assertFalse(results.next());
+                }
+            }
+        }
+
+
     }
 
     @AfterEach

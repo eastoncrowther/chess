@@ -11,7 +11,14 @@ public class SqlUserDAO implements UserDAO {
 
     @Override
     public void clear() {
+        String statementString = "TRUNCATE userTable";
 
+        try (var conn = DatabaseManager.getConnection();
+             var statement = conn.prepareStatement(statementString)) {
+            statement.executeUpdate();
+        } catch (SQLException | DataAccessException e) {
+            throw new RuntimeException("Error clearing userTable", e);
+        }
     }
 
     @Override
