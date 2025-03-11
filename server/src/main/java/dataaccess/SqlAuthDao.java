@@ -1,6 +1,8 @@
 package dataaccess;
 
 import model.AuthData;
+
+import javax.xml.crypto.Data;
 import java.sql.*;
 
 public class SqlAuthDao implements AuthDAO {
@@ -10,7 +12,14 @@ public class SqlAuthDao implements AuthDAO {
 
     @Override
     public void clear() {
+        var statementString = "TRUNCATE authTable";
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var statement = conn.prepareStatement(statementString)) {
 
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        } catch (SQLException | DataAccessException e) {}
     }
 
     @Override
@@ -32,8 +41,8 @@ public class SqlAuthDao implements AuthDAO {
             """
             CREATE TABLE if NOT EXISTS authTable
             (
-            'username' VARCHAR(255) NOT NULL,
-            'authToken' VARCHAR(255) NOT NULL,
+            username VARCHAR(255) NOT NULL,
+            authToken VARCHAR(255) NOT NULL
             )
             """
     };
