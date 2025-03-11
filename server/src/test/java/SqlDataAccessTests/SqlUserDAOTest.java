@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import javax.xml.crypto.Data;
 import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -88,12 +89,13 @@ class SqlUserDAOTest {
     }
 
     @Test
-    void getUser() {
-        
+    void getUser() throws DataAccessException {
+        UserData newUser = new UserData("easton", "0000", "easton.crowther@gmail.com");
 
+        sqlUserDao.createUser(newUser);
 
+        UserData retrievedUser = sqlUserDao.getUser("easton");
 
-
-
+        Assertions.assertEquals(newUser, retrievedUser);
     }
 }

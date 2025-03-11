@@ -1,5 +1,6 @@
 package dataaccess;
 
+import model.AuthData;
 import model.UserData;
 
 import java.sql.SQLException;
@@ -39,7 +40,21 @@ public class SqlUserDAO implements UserDAO {
 
     @Override
     public UserData getUser(String username) {
-        return null;
+        var statementString = "SELECT username, password, email FROM userTable WHERE username = ?";
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var statement = conn.prepareStatement(statementString)) {
+                statement.setString(1, username);
+
+                try (var results = statement.executeQuery()) {
+                    results.next();
+                    String password = results.getString("password");
+                    String email = results.getString("email");
+                    return (new UserData(username, password, email));
+                }
+            }
+        } catch (SQLException | DataAccessException e) {
+            return null;
+        }
     }
 
     private final String[] createStatements = {
