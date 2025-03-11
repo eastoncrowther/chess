@@ -35,9 +35,9 @@ public class SqlUserDAO implements UserDAO {
             """
             CREATE TABLE if NOT EXISTS userTable
             (
-            'username' VARCHAR(255) NOT NULL,
-            'password' VARCHAR(255) NOT NULL,
-            'password' VARCHAR(255) NOT NULL
+            username VARCHAR(255) NOT NULL,
+            password VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL
             )
             """
     };
