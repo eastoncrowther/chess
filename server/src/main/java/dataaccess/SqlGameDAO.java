@@ -2,14 +2,12 @@ package dataaccess;
 
 import chess.ChessGame;
 import com.google.gson.Gson;
-import model.AuthData;
 import model.GameData;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
+
 
 public class SqlGameDAO implements GameDAO {
     public SqlGameDAO () throws Exception {
@@ -42,7 +40,11 @@ public class SqlGameDAO implements GameDAO {
                 statement.setString(3, game.blackUsername());
                 statement.setString(4, game.gameName());
                 statement.setString(5, gameJson);
-                statement.executeUpdate();
+
+                int rowsUpdated = statement.executeUpdate();
+                if (rowsUpdated == 0) {
+                    throw new DataAccessException("Game insert failed: missing fields");
+                }
             }
         } catch (SQLException | DataAccessException e) {
             throw new DataAccessException("Error inserting game data");
@@ -102,13 +104,51 @@ public class SqlGameDAO implements GameDAO {
 
     @Override
     public void updateGame(GameData game) throws DataAccessException {
+        var statementString = "UPDATE gameTable SET whiteUsername = ?, blackUsername = ?, gameName = ?, chessGame = ? WHERE gameID = ?";
 
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var statement = conn.prepareStatement(statementString)) {
+                String gameJson = new Gson().toJson(game.game());
+
+                statement.setString(1, game.whiteUsername());
+                statement.setString(2, game.blackUsername());
+                statement.setString(3, game.gameName());
+                statement.setString(4, gameJson);
+                statement.setInt(5, game.gameID());
+
+                int rowsUpdated = statement.executeUpdate();
+                if (rowsUpdated == 0) {
+                    throw new DataAccessException("Game update failed, no game found with gameID: " + game.gameID());
+                }
+            }
+        } catch (SQLException | DataAccessException e) {
+            throw new DataAccessException("Error updating game data");
+        }
     }
 
+    // function to help with generating new gameIDs
     @Override
     public boolean gameIDinUse(int gameID) {
+        var statementString = "SELECT COUNT(*) FROM gameTable WHERE gameID = ?";
+
+        try (var conn = DatabaseManager.getConnection();
+             var statement = conn.prepareStatement(statementString)) {
+
+            statement.setInt(1, gameID);
+
+            try (var results = statement.executeQuery()) {
+                if (results.next()) {
+                    return results.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException | DataAccessException e) {
+            System.err.println("Error checking if gameID is in use: " + e.getMessage());
+        }
+
         return false;
     }
+
+
 
     private final String[] createStatements = {
             """

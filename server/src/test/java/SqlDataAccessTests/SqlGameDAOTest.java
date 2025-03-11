@@ -13,9 +13,6 @@ import com.google.gson.Gson;
 
 import java.sql.SQLException;
 import java.util.Collection;
-import java.util.HashSet;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class SqlGameDAOTest {
     SqlGameDAO sqlGameDao;
@@ -137,10 +134,15 @@ class SqlGameDAOTest {
 
 
     @Test
-    void updateGame() {
-    }
+    void updateGame() throws DataAccessException {
+        ChessGame newGame = new ChessGame();
+        GameData newGameData = new GameData(1, "easton", "canon", "match 1", newGame);
+        GameData updatedGameData = new GameData(1, "charles", "canon", "match 1", newGame);
 
-    @Test
-    void gameIDinUse() {
+        sqlGameDao.createGame(newGameData);
+
+        sqlGameDao.updateGame(updatedGameData);
+
+        Assertions.assertEquals(sqlGameDao.getGame(1), updatedGameData);
     }
 }
