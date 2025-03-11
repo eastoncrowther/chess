@@ -15,7 +15,7 @@ public class SqlAuthDao implements AuthDAO {
         var statementString = "TRUNCATE authTable";
         try (var conn = DatabaseManager.getConnection()) {
             try (var statement = conn.prepareStatement(statementString)) {
-
+                statement.executeUpdate();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -24,7 +24,27 @@ public class SqlAuthDao implements AuthDAO {
 
     @Override
     public void createAuth(AuthData auth) throws DataAccessException {
+        System.out.println("createAuth() called with username: " + auth.username() + " and authToken: " + auth.authToken());
 
+
+        var statementString = "INSERT INTO authTable (username, authToken) VALUES (?, ?)";
+
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var statement = conn.prepareStatement(statementString)) {
+                statement.setString(1, auth.username());
+                statement.setString(2, auth.authToken());
+
+                System.out.println("Executing: " + statement);
+                int rowsAffected = statement.executeUpdate();
+                System.out.println("Rows inserted: " + rowsAffected);
+
+                if (rowsAffected == 0) {
+                    throw new DataAccessException("No rows inserted!");
+                }
+            }
+        } catch (SQLException | DataAccessException e) {
+            throw new DataAccessException("Error inserting auth data");
+        }
     }
 
     @Override
@@ -42,7 +62,8 @@ public class SqlAuthDao implements AuthDAO {
             CREATE TABLE if NOT EXISTS authTable
             (
             username VARCHAR(255) NOT NULL,
-            authToken VARCHAR(255) NOT NULL
+            authToken VARCHAR(255) NOT NULL,
+            PRIMARY KEY (authToken)
             )
             """
     };
