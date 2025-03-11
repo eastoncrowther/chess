@@ -102,7 +102,15 @@ class SqlGameDAOTest {
     }
 
     @Test
-    void getGame() {
+    void getGame() throws DataAccessException{
+        ChessGame newGame = new ChessGame();
+        GameData newGameData = new GameData(1, "easton", "canon", "match 1", newGame);
+
+        sqlGameDao.createGame(newGameData);
+
+        GameData retrievedGame = sqlGameDao.getGame(1);
+
+        Assertions.assertEquals(newGameData, retrievedGame);
     }
 
     @Test
