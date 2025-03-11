@@ -1,12 +1,16 @@
 package SqlDataAccessTests;
 
+import dataaccess.DataAccessException;
 import dataaccess.DatabaseManager;
 import dataaccess.SqlAuthDao;
 import dataaccess.SqlUserDAO;
+import model.UserData;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -56,10 +60,40 @@ class SqlUserDAOTest {
     }
 
     @Test
-    void createUser() {
+    void createUser() throws DataAccessException, SQLException {
+        UserData newUser = new UserData("easton", "0000", "easton.crowther@gmail.com");
+
+        sqlUserDao.createUser(newUser);
+
+        String retrievedUserName = null;
+        String retrievedPassword = null;
+        String retrievedEmail = null;
+
+        try (var conn = DatabaseManager.getConnection();
+             var statement = conn.prepareStatement("SELECT username, password, email FROM userTable WHERE username = ?")) {
+            statement.setString(1, newUser.username());
+            try (var results = statement.executeQuery()) {
+                if (results.next()) {
+                    retrievedUserName = results.getString("username");
+                    retrievedPassword = results.getString("password");
+                    retrievedEmail = results.getString("email");
+                }
+            }
+        }
+
+        // Compare expected and actual values
+        Assertions.assertEquals(newUser.username(), retrievedUserName, "Usernames do not match.");
+        Assertions.assertEquals(newUser.password(), retrievedPassword, "passwords do not match.");
+        Assertions.assertEquals(newUser.email(), retrievedEmail, "emails do not match.");
     }
 
     @Test
     void getUser() {
+        
+
+
+
+
+
     }
 }

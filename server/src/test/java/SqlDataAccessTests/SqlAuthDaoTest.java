@@ -65,7 +65,7 @@ class SqlAuthDaoTest {
             statement.setString(1, newAuth.username());
 
             try (var results = statement.executeQuery()) {
-                if (results.next()) { // Ensure there is a result
+                if (results.next()) {
                     retrievedUsername = results.getString("username");
                     retrievedToken = results.getString("authToken");
                 }

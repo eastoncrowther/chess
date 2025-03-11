@@ -31,8 +31,6 @@ public class SqlAuthDao implements AuthDAO {
             try (var statement = conn.prepareStatement(statementString)) {
                 statement.setString(1, auth.username());
                 statement.setString(2, auth.authToken());
-
-                System.out.println("Executing: " + statement);
                 statement.executeUpdate();
             }
         } catch (SQLException | DataAccessException e) {
