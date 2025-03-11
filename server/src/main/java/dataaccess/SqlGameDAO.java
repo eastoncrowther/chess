@@ -1,5 +1,6 @@
 package dataaccess;
 
+import com.google.gson.Gson;
 import model.GameData;
 
 import java.sql.SQLException;
@@ -13,12 +14,35 @@ public class SqlGameDAO implements GameDAO {
 
     @Override
     public void clear() {
+        String statementString = "TRUNCATE gameTable";
 
+        try (var conn = DatabaseManager.getConnection();
+             var statement = conn.prepareStatement(statementString)) {
+            statement.executeUpdate();
+        } catch (SQLException | DataAccessException e) {
+            throw new RuntimeException("Error clearing gameTable", e);
+        }
     }
 
     @Override
     public void createGame(GameData game) throws DataAccessException {
+        var statementString = "INSERT INTO gameTable (gameID, whiteUsername, blackUsername, gameName, chessGame)" +
+                "VALUES (?, ?, ?, ?, ?)";
 
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var statement = conn.prepareStatement(statementString)) {
+                String gameJson = new Gson().toJson(game.game());
+
+                statement.setInt(1, game.gameID());
+                statement.setString(2, game.whiteUsername());
+                statement.setString(3, game.blackUsername());
+                statement.setString(4, game.gameName());
+                statement.setString(5, gameJson);
+                statement.executeUpdate();
+            }
+        } catch (SQLException | DataAccessException e) {
+            throw new DataAccessException("Error inserting game data");
+        }
     }
 
     @Override
@@ -45,11 +69,11 @@ public class SqlGameDAO implements GameDAO {
             """
             CREATE TABLE if NOT EXISTS gameTable
             (
-            'gameID' INT NOT NULL,
-            'whiteUsername' VARCHAR(255) NOT NULL,
-            'blackUsername' VARCHAR(255) NOT NULL,
-            'gameName' VARCHAR(255) NOT NULL,
-            'chessGame' TEXT
+            gameID INT NOT NULL,
+            whiteUsername VARCHAR(255) NOT NULL,
+            blackUsername VARCHAR(255) NOT NULL,
+            gameName VARCHAR(255) NOT NULL,
+            chessGame TEXT
             )
             """
     };
