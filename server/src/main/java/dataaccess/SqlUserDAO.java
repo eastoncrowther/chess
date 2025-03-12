@@ -24,37 +24,54 @@ public class SqlUserDAO implements UserDAO {
 
     @Override
     public void createUser(UserData user) throws DataAccessException {
+        if (user == null) {
+            throw new DataAccessException("User data is null");
+        }
+
+        // Check if user already exists
+        if (getUser(user.username()) != null) {
+            throw new DataAccessException("User already exists");
+        }
+
         var statementString = "INSERT INTO userTable (username, password, email) VALUES (?, ?, ?)";
 
-        try (var conn = DatabaseManager.getConnection()) {
-            try (var statement = conn.prepareStatement(statementString)) {
-                statement.setString(1, user.username());
-                statement.setString(2, user.password());
-                statement.setString(3, user.email());
-                statement.executeUpdate();
-            }
-        } catch (SQLException | DataAccessException e) {
+        try (var conn = DatabaseManager.getConnection();
+             var statement = conn.prepareStatement(statementString)) {
+            statement.setString(1, user.username());
+            statement.setString(2, user.password());
+            statement.setString(3, user.email());
+            statement.executeUpdate();
+        } catch (SQLException e) {
             throw new DataAccessException("Error inserting user data");
         }
     }
 
     @Override
     public UserData getUser(String username) {
-        var statementString = "SELECT username, password, email FROM userTable WHERE username = ?";
-        try (var conn = DatabaseManager.getConnection()) {
-            try (var statement = conn.prepareStatement(statementString)) {
-                statement.setString(1, username);
+        if (username == null || username.isEmpty()) {
+            return null;
+        }
 
-                try (var results = statement.executeQuery()) {
-                    results.next();
-                    String password = results.getString("password");
-                    String email = results.getString("email");
-                    return (new UserData(username, password, email));
+        var statementString = "SELECT username, password, email FROM userTable WHERE username = ?";
+
+        try (var conn = DatabaseManager.getConnection();
+             var statement = conn.prepareStatement(statementString)) {
+            statement.setString(1, username);
+
+            try (var results = statement.executeQuery()) {
+                if (results.next()) {
+                    return new UserData(
+                            results.getString("username"),
+                            results.getString("password"),
+                            results.getString("email")
+                    );
                 }
             }
         } catch (SQLException | DataAccessException e) {
             return null;
         }
+
+        return null;
     }
 
     private final String[] createStatements = {

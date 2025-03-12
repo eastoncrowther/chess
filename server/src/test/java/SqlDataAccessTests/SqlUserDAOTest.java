@@ -87,6 +87,19 @@ class SqlUserDAOTest {
         Assertions.assertEquals(newUser.password(), retrievedPassword, "passwords do not match.");
         Assertions.assertEquals(newUser.email(), retrievedEmail, "emails do not match.");
     }
+    @Test
+    void createDuplicateUser() throws DataAccessException {
+        UserData newUser = new UserData("easton", "0000", "easton.crowther@gmail.com");
+
+        sqlUserDao.createUser(newUser);
+
+        // Attempting to create another user with the same username should throw an exception
+        DataAccessException exception = assertThrows(DataAccessException.class, () -> {
+            sqlUserDao.createUser(newUser);
+        });
+
+        Assertions.assertEquals("User already exists", exception.getMessage(), "Duplicate user should not be inserted.");
+    }
 
     @Test
     void getUser() throws DataAccessException {
@@ -97,5 +110,11 @@ class SqlUserDAOTest {
         UserData retrievedUser = sqlUserDao.getUser("easton");
 
         Assertions.assertEquals(newUser, retrievedUser);
+    }
+    @Test
+    void getNonExistentUser() {
+        UserData retrievedUser = sqlUserDao.getUser("nonexistentuser");
+
+        assertNull(retrievedUser, "Fetching a non-existent user should return null.");
     }
 }
