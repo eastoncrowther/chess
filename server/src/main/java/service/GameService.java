@@ -35,14 +35,8 @@ public class GameService {
             chessBoard.resetBoard();
             chessGame.setBoard(chessBoard);
 
-            // generate a new game ID
-            int gameID;
-            do {
-                gameID = ThreadLocalRandom.current().nextInt(1, 1000);
-            } while (gameDAO.gameIDinUse(gameID));
-
-            gameDAO.createGame(new GameData(gameID, null, null, gameName, chessGame));
-            return new CreateResult(gameID);
+            GameData newGame = gameDAO.createGame(new GameData(0, null, null, gameName, chessGame));
+            return new CreateResult(newGame.gameID());
         } catch (DataAccessException e) {
             throw new DataAccessException("game already exits");
         }

@@ -46,9 +46,13 @@ public class SqlAuthDao implements AuthDAO {
                 statement.setString(1, authToken);
 
                 try (var results = statement.executeQuery()) {
-                    results.next();
-                    String username = results.getString("username");
-                    return new AuthData(authToken, username);
+                    if (results.next()) {
+                        String username = results.getString("username");
+                        return new AuthData(authToken, username);
+                    }
+                    else {
+                        return null;
+                    }
                 }
             }
         } catch (SQLException | DataAccessException e) {
@@ -62,10 +66,13 @@ public class SqlAuthDao implements AuthDAO {
         try (var conn = DatabaseManager.getConnection()) {
             try (var statement = conn.prepareStatement(statementString)) {
                statement.setString(1, auth.authToken());
-               statement.executeUpdate();
+               int rowsAffected = statement.executeUpdate();
+               if (rowsAffected == 0) {
+                   throw new DataAccessException("auth not found");
+               }
             }
         } catch (SQLException | DataAccessException e) {
-            throw new DataAccessException("authToken not found");
+            throw new DataAccessException("Error deleting auth data");
         }
     }
 

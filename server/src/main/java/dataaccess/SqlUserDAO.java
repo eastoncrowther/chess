@@ -81,7 +81,8 @@ public class SqlUserDAO implements UserDAO {
             (
             username VARCHAR(255) NOT NULL,
             password VARCHAR(255) NOT NULL,
-            email VARCHAR(255) NOT NULL
+            email VARCHAR(255) NOT NULL,
+            PRIMARY KEY (username)
             )
             """
     };

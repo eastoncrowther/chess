@@ -12,8 +12,10 @@ import java.util.Objects;
  * signature of the existing methods.
  */
 public class ChessBoard implements Cloneable{
-    private ChessPiece[][] board = new ChessPiece[8][8];
-    public ChessBoard() {}
+    private ChessPiece[][] board;
+    public ChessBoard() {
+        board = new ChessPiece[8][8];
+    }
 
     /**
      * Adds a chess piece to the chessboard

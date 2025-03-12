@@ -12,11 +12,12 @@ public class MemoryGameDAO implements GameDAO{
     }
 
     @Override
-    public void createGame(GameData game) throws DataAccessException {
+    public GameData createGame(GameData game) throws DataAccessException {
         boolean inserted = this.gamedata.add(game);
         if (!inserted) {
             throw new DataAccessException("Game already exists");
         }
+        return game;
     }
 
     @Override

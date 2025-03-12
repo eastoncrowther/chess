@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import model.GameData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Collection;
 import java.util.HashSet;
 
@@ -27,29 +28,40 @@ public class SqlGameDAO implements GameDAO {
     }
 
     @Override
-    public void createGame(GameData game) throws DataAccessException {
-        var statementString = "INSERT INTO gameTable (gameID, whiteUsername, blackUsername, gameName, chessGame)" +
-                "VALUES (?, ?, ?, ?, ?)";
+    public GameData createGame(GameData game) throws DataAccessException {
+        String statementString = "INSERT INTO gameTable (whiteUsername, blackUsername, gameName, chessGame) " +
+                "VALUES (?, ?, ?, ?)";
 
-        try (var conn = DatabaseManager.getConnection()) {
-            try (var statement = conn.prepareStatement(statementString)) {
-                String gameJson = new Gson().toJson(game.game());
+        try (var conn = DatabaseManager.getConnection();
+             var statement = conn.prepareStatement(statementString, Statement.RETURN_GENERATED_KEYS)) {
 
-                statement.setInt(1, game.gameID());
-                statement.setString(2, game.whiteUsername());
-                statement.setString(3, game.blackUsername());
-                statement.setString(4, game.gameName());
-                statement.setString(5, gameJson);
+            String gameJson = new Gson().toJson(game.game());
 
-                int rowsUpdated = statement.executeUpdate();
-                if (rowsUpdated == 0) {
-                    throw new DataAccessException("Game insert failed: missing fields");
+            statement.setString(1, game.whiteUsername());
+            statement.setString(2, game.blackUsername());
+            statement.setString(3, game.gameName());
+            statement.setString(4, gameJson);
+
+            int affectedRows = statement.executeUpdate();
+            if (affectedRows == 0) {
+                throw new DataAccessException("Creating game failed, no rows affected.");
+            }
+
+            // Retrieve generated gameID
+            try (ResultSet rs = statement.getGeneratedKeys()) {
+                if (rs.next()) {
+                    int gameID = rs.getInt(1);
+                    return new GameData(gameID, game.whiteUsername(), game.blackUsername(), game.gameName(), game.game());
+                } else {
+                    throw new DataAccessException("Creating game failed, no ID obtained.");
                 }
             }
-        } catch (SQLException | DataAccessException e) {
+
+        } catch (SQLException e) {
             throw new DataAccessException("Error inserting game data");
         }
     }
+
 
     @Override
     public GameData getGame(int gameID) throws DataAccessException {
@@ -63,7 +75,7 @@ public class SqlGameDAO implements GameDAO {
                     return readGameData(results);
                 }
             }
-        } catch (SQLException e) {
+        } catch (SQLException | DataAccessException e) {
             throw new DataAccessException("Error retrieving game with ID " + gameID);
         }
         throw new DataAccessException("gameID not found");
@@ -72,22 +84,20 @@ public class SqlGameDAO implements GameDAO {
 
     @Override
     public Collection<GameData> listGames() {
-        Collection<GameData> retrievedGames = new HashSet<>();
+        Collection<GameData> games = new HashSet<>();
+        String sql = "SELECT * FROM gameTable";
 
-        var statementString = "SELECT * FROM gameTable;";
+        try (var conn = DatabaseManager.getConnection();
+             var statement = conn.prepareStatement(sql);
+             var results = statement.executeQuery()) {
 
-        try (var conn = DatabaseManager.getConnection()) {
-            try (var statement = conn.prepareStatement(statementString)) {
-                try (var results = statement.executeQuery()) {
-                    while (results.next()) {
-                        retrievedGames.add(readGameData(results));
-                    }
-                    return retrievedGames;
-                }
+            while (results.next()) {
+                games.add(readGameData(results));
             }
         } catch (SQLException | DataAccessException e) {
-            throw new RuntimeException("Error listing games");
+            throw new RuntimeException("Error listing games", e);
         }
+        return games;
     }
 
     private GameData readGameData(ResultSet results) throws SQLException {
@@ -130,7 +140,7 @@ public class SqlGameDAO implements GameDAO {
             if (rowsUpdated == 0) {
                 throw new DataAccessException("Game update failed, no game found with gameID: " + game.gameID());
             }
-        } catch (SQLException e) {
+        } catch (SQLException | DataAccessException e) {
             throw new DataAccessException("Error updating game data");
         }
     }
@@ -139,36 +149,33 @@ public class SqlGameDAO implements GameDAO {
     // function to help with generating new gameIDs
     @Override
     public boolean gameIDinUse(int gameID) {
-        var statementString = "SELECT COUNT(*) FROM gameTable WHERE gameID = ?";
-
+        String sql = "SELECT COUNT(*) FROM gameTable WHERE gameID=?";
         try (var conn = DatabaseManager.getConnection();
-             var statement = conn.prepareStatement(statementString)) {
+             var stmt = conn.prepareStatement(sql)) {
 
-            statement.setInt(1, gameID);
-
-            try (var results = statement.executeQuery()) {
-                if (results.next()) {
-                    return results.getInt(1) > 0;
+            stmt.setInt(1, gameID);
+            try (var rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
                 }
+                return false;
             }
         } catch (SQLException | DataAccessException e) {
-            System.err.println("Error checking if gameID is in use: " + e.getMessage());
+            return false;
         }
-
-        return false;
     }
-
 
 
     private final String[] createStatements = {
             """
             CREATE TABLE if NOT EXISTS gameTable
             (
-            gameID INT NOT NULL,
-            whiteUsername VARCHAR(255) NOT NULL,
-            blackUsername VARCHAR(255) NOT NULL,
-            gameName VARCHAR(255) NOT NULL,
-            chessGame TEXT
+            gameID INT NOT NULL AUTO_INCREMENT,
+            whiteUsername VARCHAR(255),
+            blackUsername VARCHAR(255),
+            gameName VARCHAR(255),
+            chessGame TEXT,
+            PRIMARY KEY (gameID)
             )
             """
     };
