@@ -1,6 +1,5 @@
-package SqlDataAccessTests;
+package dataaccess;
 
-import dataaccess.*;
 import model.AuthData;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;

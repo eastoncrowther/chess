@@ -1,16 +1,11 @@
-package SqlDataAccessTests;
+package dataaccess;
 
-import dataaccess.DataAccessException;
-import dataaccess.DatabaseManager;
-import dataaccess.SqlAuthDao;
-import dataaccess.SqlUserDAO;
 import model.UserData;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import javax.xml.crypto.Data;
 import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.*;
