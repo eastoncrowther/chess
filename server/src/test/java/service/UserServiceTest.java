@@ -1,7 +1,6 @@
 package service;
 
 import dataaccess.*;
-import jdk.jshell.spi.ExecutionControlProvider;
 import model.UserData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,20 +12,18 @@ import static org.junit.jupiter.api.Assertions.fail;
 class UserServiceTest {
     UserDAO userDB;
     AuthDAO authDB;
+    UserService userService;
 
     @BeforeEach
     public void configureDAOs () throws Exception {
         userDB = new MemoryUserDAO();
         authDB = new MemoryAuthDAO();
+        userService = new UserService(userDB, authDB);
     }
 
     @Test
     @DisplayName("Test register service")
     public void register() {
-        var userDB = new MemoryUserDAO();
-        var authDB = new MemoryAuthDAO();
-
-        var userService = new UserService(userDB, authDB);
 
         RegisterResult actual = null;
         try {
@@ -46,7 +43,6 @@ class UserServiceTest {
     @Test
     @DisplayName("Test login with correct credentials")
     void loginSuccess() {
-        UserService userService = new UserService(userDB, authDB);
         try {
             // Store password securely using BCrypt before saving the user
             String hashedPassword = org.mindrot.jbcrypt.BCrypt.hashpw("123", org.mindrot.jbcrypt.BCrypt.gensalt());
@@ -77,8 +73,6 @@ class UserServiceTest {
         } catch (DataAccessException e) {
             fail("Unexpected exception: " + e.getMessage());
         }
-
-        var userService = new UserService(userDB, authDB);
         LoginResult loggedIn = null;
 
         try {
@@ -124,10 +118,6 @@ class UserServiceTest {
     @Test
     @DisplayName("Test register service with duplicate username")
     public void registerDuplicateUsername() {
-        var userDB = new MemoryUserDAO();
-        var authDB = new MemoryAuthDAO();
-        var userService = new UserService(userDB, authDB);
-
         try {
             userService.register(new RegisterRequest("Easton", "123", "easton.crowther@gmail.com"));
         } catch (Exception e) {
@@ -143,8 +133,6 @@ class UserServiceTest {
     @Test
     @DisplayName("Test login with incorrect password")
     void loginIncorrectPassword() {
-        UserService userService = new UserService(userDB, authDB);
-
         try {
             // Hash the password before storing the user
             String hashedPassword = org.mindrot.jbcrypt.BCrypt.hashpw("123", org.mindrot.jbcrypt.BCrypt.gensalt());
@@ -162,10 +150,6 @@ class UserServiceTest {
     @Test
     @DisplayName("Test login with non-existent username")
     public void loginNonExistentUser() {
-        var userDB = new MemoryUserDAO();
-        var authDB = new MemoryAuthDAO();
-        var userService = new UserService(userDB, authDB);
-
         Assertions.assertThrows(UnauthorizedException.class, () ->
                 userService.login(new LoginRequest("NonExistentUser", "password"))
         );
@@ -174,10 +158,6 @@ class UserServiceTest {
     @Test
     @DisplayName("Test logout with invalid auth token")
     public void logoutInvalidAuthToken() {
-        var userDB = new MemoryUserDAO();
-        var authDB = new MemoryAuthDAO();
-        var userService = new UserService(userDB, authDB);
-
         Assertions.assertThrows(UnauthorizedException.class, () ->
                 userService.logout("invalidToken")
         );
