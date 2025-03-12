@@ -54,19 +54,21 @@ public class SqlGameDAO implements GameDAO {
     @Override
     public GameData getGame(int gameID) throws DataAccessException {
         var statementString = "SELECT * FROM gameTable WHERE gameID = ?";
-        try (var conn = DatabaseManager.getConnection()) {
-            try (var statement = conn.prepareStatement(statementString)) {
-                statement.setInt(1, gameID);
+        try (var conn = DatabaseManager.getConnection();
+             var statement = conn.prepareStatement(statementString)) {
 
-                try (var results = statement.executeQuery()) {
-                    results.next();
+            statement.setInt(1, gameID);
+            try (var results = statement.executeQuery()) {
+                if (results.next()) {
                     return readGameData(results);
                 }
             }
-        } catch (SQLException | DataAccessException e) {
-            return null;
+        } catch (SQLException e) {
+            throw new DataAccessException("Error retrieving game with ID " + gameID);
         }
+        throw new DataAccessException("gameID not found");
     }
+
 
     @Override
     public Collection<GameData> listGames() {
@@ -104,27 +106,35 @@ public class SqlGameDAO implements GameDAO {
 
     @Override
     public void updateGame(GameData game) throws DataAccessException {
+        if (game == null) {
+            throw new DataAccessException("Game data is null");
+        }
+
+        if (!gameIDinUse(game.gameID())) {
+            throw new DataAccessException("gameID not found");
+        }
+
         var statementString = "UPDATE gameTable SET whiteUsername = ?, blackUsername = ?, gameName = ?, chessGame = ? WHERE gameID = ?";
 
-        try (var conn = DatabaseManager.getConnection()) {
-            try (var statement = conn.prepareStatement(statementString)) {
-                String gameJson = new Gson().toJson(game.game());
+        try (var conn = DatabaseManager.getConnection();
+             var statement = conn.prepareStatement(statementString)) {
 
-                statement.setString(1, game.whiteUsername());
-                statement.setString(2, game.blackUsername());
-                statement.setString(3, game.gameName());
-                statement.setString(4, gameJson);
-                statement.setInt(5, game.gameID());
+            String gameJson = new Gson().toJson(game.game());
+            statement.setString(1, game.whiteUsername());
+            statement.setString(2, game.blackUsername());
+            statement.setString(3, game.gameName());
+            statement.setString(4, gameJson);
+            statement.setInt(5, game.gameID());
 
-                int rowsUpdated = statement.executeUpdate();
-                if (rowsUpdated == 0) {
-                    throw new DataAccessException("Game update failed, no game found with gameID: " + game.gameID());
-                }
+            int rowsUpdated = statement.executeUpdate();
+            if (rowsUpdated == 0) {
+                throw new DataAccessException("Game update failed, no game found with gameID: " + game.gameID());
             }
-        } catch (SQLException | DataAccessException e) {
+        } catch (SQLException e) {
             throw new DataAccessException("Error updating game data");
         }
     }
+
 
     // function to help with generating new gameIDs
     @Override

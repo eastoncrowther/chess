@@ -1,8 +1,6 @@
 package server;
 
-import dataaccess.MemoryAuthDAO;
-import dataaccess.MemoryGameDAO;
-import dataaccess.MemoryUserDAO;
+import dataaccess.*;
 import service.BadRequestException;
 import service.GameService;
 import service.UnauthorizedException;
@@ -10,13 +8,31 @@ import service.UserService;
 import spark.Spark;
 
 public class Server {
-    // these types can be switched to use Sql implementations
-    private final MemoryAuthDAO auths = new MemoryAuthDAO();
-    private final MemoryGameDAO games = new MemoryGameDAO();
-    private final MemoryUserDAO users = new MemoryUserDAO();
+    AuthDAO auths;
+    GameDAO games;
+    UserDAO users;
 
-    private final UserService userService = new UserService(users, auths);
-    private final GameService gameService = new GameService(games, auths);
+    UserService userService;
+    GameService gameService;
+
+    public Server () {
+        try {
+            auths = new SqlAuthDao();
+            games = new SqlGameDAO();
+            users = new SqlUserDAO();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        userService = new UserService(users, auths);
+        gameService = new GameService(games, auths);
+
+        try {
+            DatabaseManager.createDatabase();
+        } catch (DataAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     public int run(int desiredPort) {
         Spark.port(desiredPort);
