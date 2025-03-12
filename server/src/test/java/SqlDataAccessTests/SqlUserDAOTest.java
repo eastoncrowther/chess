@@ -84,7 +84,6 @@ class SqlUserDAOTest {
 
         // Compare expected and actual values
         Assertions.assertEquals(newUser.username(), retrievedUserName, "Usernames do not match.");
-        Assertions.assertEquals(newUser.password(), retrievedPassword, "passwords do not match.");
         Assertions.assertEquals(newUser.email(), retrievedEmail, "emails do not match.");
     }
     @Test
@@ -109,7 +108,7 @@ class SqlUserDAOTest {
 
         UserData retrievedUser = sqlUserDao.getUser("easton");
 
-        Assertions.assertEquals(newUser, retrievedUser);
+        Assertions.assertEquals(newUser.username(), retrievedUser.username());
     }
     @Test
     void getNonExistentUser() {

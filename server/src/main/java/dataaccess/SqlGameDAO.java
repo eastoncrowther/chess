@@ -29,6 +29,9 @@ public class SqlGameDAO implements GameDAO {
 
     @Override
     public GameData createGame(GameData game) throws DataAccessException {
+        if (gameIDinUse(game.gameID())) {
+            throw new DataAccessException("Game ID already exists");
+        }
         String statementString = "INSERT INTO gameTable (whiteUsername, blackUsername, gameName, chessGame) " +
                 "VALUES (?, ?, ?, ?)";
 

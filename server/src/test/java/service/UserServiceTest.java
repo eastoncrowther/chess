@@ -1,9 +1,9 @@
 package service;
 
-import dataaccess.DataAccessException;
-import dataaccess.MemoryAuthDAO;
-import dataaccess.MemoryUserDAO;
+import dataaccess.*;
+import jdk.jshell.spi.ExecutionControlProvider;
 import model.UserData;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Assertions;
@@ -11,6 +11,14 @@ import org.junit.jupiter.api.Assertions;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class UserServiceTest {
+    UserDAO userDB;
+    AuthDAO authDB;
+
+    @BeforeEach
+    public void configureDAOs () throws Exception {
+        userDB = new MemoryUserDAO();
+        authDB = new MemoryAuthDAO();
+    }
 
     @Test
     @DisplayName("Test register service")
@@ -36,38 +44,38 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("Test login")
-    public void login() {
-        var userDB = new MemoryUserDAO();
-        var authDB = new MemoryAuthDAO();
-        
+    @DisplayName("Test login with correct credentials")
+    void loginSuccess() {
+        UserService userService = new UserService(userDB, authDB);
         try {
-            userDB.createUser(new UserData("Easton", "123", "easton.crowther@gmail.com"));
+            // Store password securely using BCrypt before saving the user
+            String hashedPassword = org.mindrot.jbcrypt.BCrypt.hashpw("123", org.mindrot.jbcrypt.BCrypt.gensalt());
+            userDB.createUser(new UserData("Easton", hashedPassword, "easton.crowther@gmail.com"));
         } catch (DataAccessException e) {
-            throw new RuntimeException(e);
+            fail("Unexpected exception: " + e.getMessage());
         }
-        LoginResult successTest = null;
-        var userService = new UserService(userDB, authDB);
+
+        LoginResult successTest;
         try {
             successTest = userService.login(new LoginRequest("Easton", "123"));
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            fail("Unexpected exception: " + e.getMessage());
+            return;
         }
 
-        Assertions.assertEquals("Easton", successTest.username());
-
+        Assertions.assertEquals("Easton", successTest.username(), "Username should match the one used for login.");
+        Assertions.assertNotNull(successTest.authToken(), "Auth token should be generated upon successful login.");
     }
 
     @Test
     @DisplayName("Test logout")
-    public void logout() {
-        var userDB = new MemoryUserDAO();
-        var authDB = new MemoryAuthDAO();
-
+    void logout() {
         try {
-            userDB.createUser(new UserData("Easton", "123", "easton.crowther@gmail.com"));
+            // Hash the password before storing the user
+            String hashedPassword = org.mindrot.jbcrypt.BCrypt.hashpw("123", org.mindrot.jbcrypt.BCrypt.gensalt());
+            userDB.createUser(new UserData("Easton", hashedPassword, "easton.crowther@gmail.com"));
         } catch (DataAccessException e) {
-            throw new RuntimeException(e);
+            fail("Unexpected exception: " + e.getMessage());
         }
 
         var userService = new UserService(userDB, authDB);
@@ -76,18 +84,23 @@ class UserServiceTest {
         try {
             loggedIn = userService.login(new LoginRequest("Easton", "123"));
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            fail("Unexpected exception: " + e.getMessage());
         }
-        // test logout
+
+        Assertions.assertNotNull(loggedIn, "Login should be successful and return a LoginResult.");
+        Assertions.assertNotNull(loggedIn.authToken(), "Auth token should be generated upon login.");
+
+        // Test logout
         try {
             userService.logout(loggedIn.authToken());
         } catch (UnauthorizedException e) {
-            throw new RuntimeException(e);
+            fail("Unexpected exception: " + e.getMessage());
         }
 
-        // check if the  auth token is in the database
-        Assertions.assertNull(authDB.getAuth(loggedIn.authToken()));
+        // Check that the auth token has been removed from the database
+        Assertions.assertNull(authDB.getAuth(loggedIn.authToken()), "Auth token should be null after logout.");
     }
+
     @Test
     @DisplayName("Test clear")
     public void clear () {
@@ -129,19 +142,20 @@ class UserServiceTest {
 
     @Test
     @DisplayName("Test login with incorrect password")
-    public void loginIncorrectPassword() {
-        var userDB = new MemoryUserDAO();
-        var authDB = new MemoryAuthDAO();
-        var userService = new UserService(userDB, authDB);
+    void loginIncorrectPassword() {
+        UserService userService = new UserService(userDB, authDB);
 
         try {
-            userDB.createUser(new UserData("Easton", "123", "easton.crowther@gmail.com"));
+            // Hash the password before storing the user
+            String hashedPassword = org.mindrot.jbcrypt.BCrypt.hashpw("123", org.mindrot.jbcrypt.BCrypt.gensalt());
+            userDB.createUser(new UserData("Easton", hashedPassword, "easton.crowther@gmail.com"));
         } catch (DataAccessException e) {
             fail("Unexpected exception: " + e.getMessage());
         }
 
         Assertions.assertThrows(UnauthorizedException.class, () ->
-                userService.login(new LoginRequest("Easton", "wrongpassword"))
+                        userService.login(new LoginRequest("Easton", "wrongpassword")),
+                "Logging in with an incorrect password should throw an UnauthorizedException."
         );
     }
 
