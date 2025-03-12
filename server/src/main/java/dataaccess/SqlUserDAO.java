@@ -2,6 +2,7 @@ package dataaccess;
 
 import model.AuthData;
 import model.UserData;
+import org.mindrot.jbcrypt.BCrypt;
 
 import java.sql.SQLException;
 
@@ -38,7 +39,7 @@ public class SqlUserDAO implements UserDAO {
         try (var conn = DatabaseManager.getConnection();
              var statement = conn.prepareStatement(statementString)) {
             statement.setString(1, user.username());
-            statement.setString(2, user.password());
+            statement.setString(2, encryptPassword(user.password()));
             statement.setString(3, user.email());
             statement.executeUpdate();
         } catch (SQLException e) {
@@ -96,5 +97,9 @@ public class SqlUserDAO implements UserDAO {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private String encryptPassword (String clearTextPassword) {
+        return BCrypt.hashpw(clearTextPassword, BCrypt.gensalt());
     }
 }

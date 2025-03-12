@@ -2,6 +2,7 @@ package service;
 import dataaccess.*;
 import model.AuthData;
 import model.UserData;
+import org.mindrot.jbcrypt.BCrypt;
 
 import java.util.UUID;
 
@@ -33,7 +34,8 @@ public class UserService {
         if(user == null) {
             throw new UnauthorizedException("user doesn't exist");
         }
-        if (!user.password().equals(loginRequest.password())) {
+
+        if (!BCrypt.checkpw(loginRequest.password(), user.password())) {
             throw new UnauthorizedException("passwords don't match");
         }
         return new LoginResult(user.username(), createAuth(user.username()));
