@@ -161,13 +161,13 @@ class SqlGameDAOTest {
     }
 
     @Test
-    void updateGameNegativeTest_NullInput() {
+    void updateGameNegativeTestNullInput() {
         // Attempt to update with null input
         Assertions.assertThrows(DataAccessException.class, () -> sqlGameDao.updateGame(null));
     }
 
     @Test
-    void updateGameNegativeTest_GameNotFound() {
+    void updateGameNegativeTestGameNotFound() {
         // Attempt to update a non-existent game (gameID not in DB)
         GameData nonExistentGame = new GameData(9999, "white", "black", "nonexistent", new ChessGame());
 

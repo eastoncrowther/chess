@@ -12,7 +12,20 @@ import java.util.HashSet;
 
 public class SqlGameDAO implements GameDAO {
     public SqlGameDAO () throws Exception {
-        configureDatabase();
+        String[] createStatements = {
+                """
+            CREATE TABLE if NOT EXISTS gameTable
+            (
+            gameID INT NOT NULL AUTO_INCREMENT,
+            whiteUsername VARCHAR(255),
+            blackUsername VARCHAR(255),
+            gameName VARCHAR(255),
+            chessGame TEXT,
+            PRIMARY KEY (gameID)
+            )
+            """
+        };
+        DatabaseManager.configureDatabase(createStatements);
     }
 
     @Override
@@ -169,30 +182,4 @@ public class SqlGameDAO implements GameDAO {
     }
 
 
-    private final String[] createStatements = {
-            """
-            CREATE TABLE if NOT EXISTS gameTable
-            (
-            gameID INT NOT NULL AUTO_INCREMENT,
-            whiteUsername VARCHAR(255),
-            blackUsername VARCHAR(255),
-            gameName VARCHAR(255),
-            chessGame TEXT,
-            PRIMARY KEY (gameID)
-            )
-            """
-    };
-
-    private void configureDatabase() throws Exception {
-        DatabaseManager.createDatabase();
-        try (var conn = DatabaseManager.getConnection()) {
-            for (var statement : createStatements) {
-                try (var preparedStatement = conn.prepareStatement(statement)) {
-                    preparedStatement.executeUpdate();
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
 }

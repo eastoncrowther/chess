@@ -7,7 +7,17 @@ import java.sql.*;
 
 public class SqlAuthDao implements AuthDAO {
     public SqlAuthDao () throws Exception {
-        configureDatabase();
+        String[] createStatements = {
+                """
+            CREATE TABLE if NOT EXISTS authTable
+            (
+            username VARCHAR(255) NOT NULL,
+            authToken VARCHAR(255) NOT NULL,
+            PRIMARY KEY (authToken)
+            )
+            """
+        };
+        DatabaseManager.configureDatabase(createStatements);
     }
 
     @Override
@@ -76,27 +86,4 @@ public class SqlAuthDao implements AuthDAO {
         }
     }
 
-    private final String[] createStatements = {
-            """
-            CREATE TABLE if NOT EXISTS authTable
-            (
-            username VARCHAR(255) NOT NULL,
-            authToken VARCHAR(255) NOT NULL,
-            PRIMARY KEY (authToken)
-            )
-            """
-    };
-
-    private void configureDatabase() throws Exception {
-        DatabaseManager.createDatabase();
-        try (var conn = DatabaseManager.getConnection()) {
-            for (var statement : createStatements) {
-                try (var preparedStatement = conn.prepareStatement(statement)) {
-                    preparedStatement.executeUpdate();
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
 }
