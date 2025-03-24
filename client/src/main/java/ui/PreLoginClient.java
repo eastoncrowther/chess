@@ -1,17 +1,16 @@
 package ui;
 
+import requestResultRecords.LoginRequest;
 import server.ServerFacade;
 
 import java.util.Arrays;
 
 public class PreLoginClient {
-    private final String serverUrl;
-    private final ServerFacade server;
     private State state;
+    private final ServerFacade server;
 
     public PreLoginClient (String serverUrl, State state) {
-        server = new ServerFacade(serverUrl);
-        this.serverUrl = serverUrl;
+        this.server = new ServerFacade(serverUrl);
         this.state = state;
     }
 
@@ -39,8 +38,13 @@ public class PreLoginClient {
     }
 
 
-    public String login(String username, String password) throws Exception {
-        return "";
+    public String login(String username, String password) {
+        try {
+            server.login(new LoginRequest(username, password));
+            return username + " successfully logged in\n";
+        } catch (Exception e) {
+            return "Wrong username or password. Please try again\n";
+        }
     }
 
     public String register(String[] registerInfo) throws Exception {
