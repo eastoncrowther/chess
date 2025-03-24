@@ -19,47 +19,51 @@ public class ServerFacade {
 
     public void clear () throws Exception {
         var path = "/db";
-        this.makeRequest("DELETE", path, null, null);
+        this.makeRequest("DELETE", path, null, null, null);
 
     }
 
     public RegisterResult register (RegisterRequest registerRequest) throws Exception{
         var path = "/user";
-        return this.makeRequest("POST", path, registerRequest, RegisterResult.class);
+        return this.makeRequest("POST", path, registerRequest, RegisterResult.class, null);
     }
 
     public LoginResult login (LoginRequest loginRequest) throws Exception {
         var path = "/session";
-        return this.makeRequest("POST", path, loginRequest, LoginResult.class);
+        return this.makeRequest("POST", path, loginRequest, LoginResult.class, null);
     }
 
     public void logout (String authToken) throws Exception {
         var path = "/session";
-        this.makeRequest("DELETE", path, authToken, null);
+        this.makeRequest("DELETE", path, null, null, authToken);
 
     }
-    
+
     public ListResult list (String authToken) throws Exception {
         var path = "/game";
-        return this.makeRequest("GET", path, authToken, ListResult.class);
+        return this.makeRequest("GET", path, null, ListResult.class, authToken);
     }
 
-    public CreateResult createGame (String gameName, String authToken) throws Exception {
+    public CreateResult createGame (CreateRequest createRequest, String authToken) throws Exception {
         var path = "/game";
-        return this.makeRequest("POST", path, gameName, CreateResult.class);
+        return this.makeRequest("POST", path, createRequest, CreateResult.class, authToken);
     }
 
     public void join (JoinRequest joinRequest, String authToken) throws Exception {
         var path = "/game";
-        this.makeRequest("PUT", path, joinRequest, null);
+        this.makeRequest("PUT", path, joinRequest, null, authToken);
     }
 
 
-    private <T> T makeRequest(String method, String path, Object request, Class<T> responseClass) throws Exception {
+    private <T> T makeRequest(String method, String path, Object request, Class<T> responseClass, String authToken) throws Exception {
         URL url = (new URI(serverUrl + path)).toURL();
         HttpURLConnection http = (HttpURLConnection) url.openConnection();
         http.setRequestMethod(method);
         http.setDoOutput(true);
+
+        if (authToken != null) {
+            http.setRequestProperty("Authorization", authToken);
+        }
 
         writeBody(request, http);
         http.connect();

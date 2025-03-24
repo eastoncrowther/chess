@@ -40,7 +40,7 @@ public class PreLoginClient {
 
 
     public String login(String username, String password) throws Exception {
-
+        return "";
     }
 
     public String register(String[] registerInfo) throws Exception {
