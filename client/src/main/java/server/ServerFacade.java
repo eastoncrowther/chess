@@ -1,7 +1,6 @@
 package server;
 
 import com.google.gson.Gson;
-import model.UserData;
 import requestResultRecords.*;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,27 +24,34 @@ public class ServerFacade {
     }
 
     public RegisterResult register (RegisterRequest registerRequest) throws Exception{
-        
+        var path = "/user";
+        return this.makeRequest("POST", path, registerRequest, RegisterResult.class);
     }
 
     public LoginResult login (LoginRequest loginRequest) throws Exception {
-
+        var path = "/session";
+        return this.makeRequest("POST", path, loginRequest, LoginResult.class);
     }
 
     public void logout (String authToken) throws Exception {
+        var path = "/session";
+        this.makeRequest("DELETE", path, authToken, null);
 
     }
-
+    
     public ListResult list (String authToken) throws Exception {
-
+        var path = "/game";
+        return this.makeRequest("GET", path, authToken, ListResult.class);
     }
 
     public CreateResult createGame (String gameName, String authToken) throws Exception {
-
+        var path = "/game";
+        return this.makeRequest("POST", path, gameName, CreateResult.class);
     }
 
     public void join (JoinRequest joinRequest, String authToken) throws Exception {
-
+        var path = "/game";
+        this.makeRequest("PUT", path, joinRequest, null);
     }
 
 
@@ -94,5 +100,4 @@ public class ServerFacade {
             }
         }
     }
-
 }
