@@ -1,6 +1,7 @@
 package ui;
 
 import requestResultRecords.LoginRequest;
+import requestResultRecords.RegisterRequest;
 import server.ServerFacade;
 
 import java.util.Arrays;
@@ -48,7 +49,21 @@ public class PreLoginClient {
     }
 
     public String register(String[] registerInfo) throws Exception {
-        return "";
+        if (registerInfo.length < 3) {
+            return "Please enter username, password, and email\n";
+        }
+        try {
+            server.register(new RegisterRequest(registerInfo[0], registerInfo[1], registerInfo[2]));
+            return registerInfo[0] + " successfully registered. Logged in\n";
+        } catch (Exception e) {
+            if (e.getMessage().contains("403")) {
+                return "User already exists. Please try again\n";
+            } else if (e.getMessage().contains("400")) {
+                return "Invalid registration details. Please check your input.\n";
+            } else {
+                return "An error occurred: " + e.getMessage() + "\n";
+            }
+        }
     }
     // this class will update the state
     public State getState () {
