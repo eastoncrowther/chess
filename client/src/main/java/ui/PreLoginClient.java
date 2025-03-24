@@ -42,6 +42,7 @@ public class PreLoginClient {
     public String login(String username, String password) {
         try {
             server.login(new LoginRequest(username, password));
+            this.state = State.LOGGEDIN;
             return username + " successfully logged in\n";
         } catch (Exception e) {
             return "Wrong username or password. Please try again\n";
@@ -54,6 +55,7 @@ public class PreLoginClient {
         }
         try {
             server.register(new RegisterRequest(registerInfo[0], registerInfo[1], registerInfo[2]));
+            this.state = State.LOGGEDIN;
             return registerInfo[0] + " successfully registered. Logged in\n";
         } catch (Exception e) {
             if (e.getMessage().contains("403")) {

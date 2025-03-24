@@ -4,10 +4,12 @@ import java.util.Scanner;
 
 public class Repl {
     private final PreLoginClient preLoginClient;
+    private final PostLoginClient postLoginClient;
     private State state;
 
     public Repl(String serverUrl, State state) {
         preLoginClient = new PreLoginClient(serverUrl, state);
+        postLoginClient = new PostLoginClient(serverUrl, state);
         this.state = state;
     }
 
@@ -22,18 +24,17 @@ public class Repl {
             String line = scanner.nextLine();
             try {
                 if (state.equals(State.INCHESSGAME)) {
-
+                    System.out.println("IN CHESSGAME REPL");
                 }
                 else if (state.equals(State.LOGGEDIN)) {
+                    result = postLoginClient.eval(line);
 
                 }
                 else {
                     result = preLoginClient.eval(line);
-                    System.out.print(result);
-
-                    // update the state of the program
-                    state = preLoginClient.getState();
                 }
+                System.out.print(result);
+                state = preLoginClient.getState();
 
             } catch (Throwable e) {
                 String message = e.toString();
