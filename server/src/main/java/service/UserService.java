@@ -61,7 +61,7 @@ public class UserService {
         authDAO.clear();
     }
 
-    public String createAuth (String username) throws DataAccessException {
+    private String createAuth (String username) throws DataAccessException {
         String authToken = UUID.randomUUID().toString();
         AuthData auth = new AuthData(authToken, username);
         authDAO.createAuth(auth);

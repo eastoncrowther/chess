@@ -2,7 +2,7 @@ package server;
 
 import com.google.gson.Gson;
 import model.UserData;
-
+import requestResultRecords.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -18,36 +18,48 @@ public class ServerFacade {
         this.serverUrl = serverUrl;
     }
 
-    public boolean login (String username, String password) {
+    public void clear () throws Exception {
+        var path = "/db";
+        this.makeRequest("DELETE", path, null, null);
 
     }
+
+    public RegisterResult register (RegisterRequest registerRequest) throws Exception{
+        
+    }
+
+    public LoginResult login (LoginRequest loginRequest) throws Exception {
+
+    }
+
+    public void logout (String authToken) throws Exception {
+
+    }
+
+    public ListResult list (String authToken) throws Exception {
+
+    }
+
+    public CreateResult createGame (String gameName, String authToken) throws Exception {
+
+    }
+
+    public void join (JoinRequest joinRequest, String authToken) throws Exception {
+
+    }
+
 
     private <T> T makeRequest(String method, String path, Object request, Class<T> responseClass) throws Exception {
-        try {
-            URL url = (new URI(serverUrl + path)).toURL();
-            HttpURLConnection http = (HttpURLConnection) url.openConnection();
-            http.setRequestMethod(method);
-            http.setDoOutput(true);
+        URL url = (new URI(serverUrl + path)).toURL();
+        HttpURLConnection http = (HttpURLConnection) url.openConnection();
+        http.setRequestMethod(method);
+        http.setDoOutput(true);
 
-            writeBody(request, http);
-            http.connect();
-            throwIfNotSuccessful(http);
-            return readBody(http, responseClass);
-        } catch (Exception e) {
-            throw e;
-        }
+        writeBody(request, http);
+        http.connect();
+        throwIfNotSuccessful(http);
+        return readBody(http, responseClass);
     }
-
-    public void clear ()  {
-
-    }
-
-
-
-
-
-
-
 
     private static void writeBody(Object request, HttpURLConnection http) throws IOException {
         if (request != null) {
