@@ -3,7 +3,7 @@ package server;
 import com.google.gson.Gson;
 import service.BadRequestException;
 import service.GameService;
-import service.JoinRequest;
+import requestResultRecords.JoinRequest;
 import spark.Request;
 import spark.Response;
 import spark.Route;

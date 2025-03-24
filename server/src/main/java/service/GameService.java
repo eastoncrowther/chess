@@ -4,8 +4,11 @@ import chess.ChessGame;
 import dataaccess.*;
 import model.AuthData;
 import model.GameData;
+import requestResultRecords.CreateResult;
+import requestResultRecords.JoinRequest;
+import requestResultRecords.ListResult;
+
 import java.util.Collection;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class GameService {
     GameDAO gameDAO;

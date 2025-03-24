@@ -1,5 +1,6 @@
 import chess.*;
 import ui.Repl;
+import ui.State;
 
 public class Main {
     public static void main(String[] args) {
@@ -8,7 +9,7 @@ public class Main {
         if (args.length == 1) {
             serverUrl = args[0];
         }
-
-        new Repl(serverUrl);
+        var loop = new Repl(serverUrl, State.LOGGEDOUT);
+        loop.run();
     }
 }

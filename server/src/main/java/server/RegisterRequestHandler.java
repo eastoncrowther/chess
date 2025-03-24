@@ -2,8 +2,8 @@ package server;
 
 import com.google.gson.Gson;
 import service.BadRequestException;
-import service.RegisterRequest;
-import service.RegisterResult;
+import requestResultRecords.RegisterRequest;
+import requestResultRecords.RegisterResult;
 import service.UserService;
 import spark.Request;
 import spark.Response;

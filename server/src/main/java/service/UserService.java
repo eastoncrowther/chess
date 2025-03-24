@@ -3,6 +3,10 @@ import dataaccess.*;
 import model.AuthData;
 import model.UserData;
 import org.mindrot.jbcrypt.BCrypt;
+import requestResultRecords.LoginRequest;
+import requestResultRecords.LoginResult;
+import requestResultRecords.RegisterRequest;
+import requestResultRecords.RegisterResult;
 
 import java.util.UUID;
 

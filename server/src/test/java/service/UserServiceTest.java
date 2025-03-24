@@ -6,6 +6,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Assertions;
+import requestResultRecords.LoginRequest;
+import requestResultRecords.LoginResult;
+import requestResultRecords.RegisterRequest;
+import requestResultRecords.RegisterResult;
 
 import static org.junit.jupiter.api.Assertions.fail;
 

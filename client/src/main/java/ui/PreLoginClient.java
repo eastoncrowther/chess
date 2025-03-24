@@ -22,7 +22,7 @@ public class PreLoginClient {
             String[] params = Arrays.copyOfRange(tokens, 1, tokens.length);
             return switch (command) {
                 case "quit" -> "quit";
-                case "login" -> login(params);
+                case "login" -> login(params[0], params[1]);
                 case "register" -> register(params);
                 default -> help();
             };
@@ -32,12 +32,15 @@ public class PreLoginClient {
         }
     }
     public String help () {
-        return "// create the help string";
+        return "register <USERNAME> <PASSWORD> <EMAIL> - to create an account\n" +
+                "login <USERNAME> <PASSWORD> - to play chess\n" +
+                "quit - playing chess\n" +
+                "help - with possible commands\n";
     }
 
 
-    public String login(String[] loginInfo) throws Exception {
-        return "";
+    public String login(String username, String password) throws Exception {
+
     }
 
     public String register(String[] registerInfo) throws Exception {
@@ -47,13 +50,4 @@ public class PreLoginClient {
     public State getState () {
         return state;
     }
-
-    // Help
-    // Quit
-    // Login
-    // Register
-
-
-
-
 }
