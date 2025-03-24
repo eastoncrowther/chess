@@ -21,6 +21,12 @@ public class Repl {
         Scanner scanner = new Scanner(System.in);
         String result = "";
         while (!result.equals("quit")) {
+            switch (state) {
+                case LOGGEDOUT -> System.out.print("[logged out] >");
+                case LOGGEDIN -> System.out.print("[logged in] >");
+                case INCHESSGAME -> System.out.print("[in game] >");
+            };
+
             String line = scanner.nextLine();
             try {
                 if (state.equals(State.INCHESSGAME)) {
@@ -28,12 +34,13 @@ public class Repl {
                 }
                 else if (state.equals(State.LOGGEDIN)) {
                     result = postLoginClient.eval(line);
+                    System.out.print(result);
 
                 }
                 else {
                     result = preLoginClient.eval(line);
-                }
-                System.out.print(result);
+                    System.out.print(result);
+                };
                 state = preLoginClient.getState();
 
             } catch (Throwable e) {

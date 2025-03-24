@@ -30,7 +30,7 @@ public class PostLoginClient {
         }
     }
     public String help () {
-        return "logout to logout\n" +
+        return "\nlogout to logout\n" +
                 "create <NAME> to create a new game of chess\n" +
                 "list to list all games currently running on the server\n" +
                 "join <ID> [WHITE|BLACK] to join a game of chess\n" +

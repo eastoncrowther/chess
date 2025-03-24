@@ -32,7 +32,7 @@ public class PreLoginClient {
         }
     }
     public String help () {
-        return "register <USERNAME> <PASSWORD> <EMAIL> - to create an account\n" +
+        return "\nregister <USERNAME> <PASSWORD> <EMAIL> - to create an account\n" +
                 "login <USERNAME> <PASSWORD> - to play chess\n" +
                 "quit - playing chess\n" +
                 "help - with possible commands\n";
