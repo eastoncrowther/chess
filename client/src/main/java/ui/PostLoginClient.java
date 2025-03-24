@@ -1,17 +1,15 @@
 package ui;
 
+import chess.ChessGame;
 import model.GameData;
-import requestResultRecords.CreateRequest;
-import requestResultRecords.ListResult;
-import requestResultRecords.LoginRequest;
-import requestResultRecords.RegisterRequest;
+import requestResultRecords.*;
 import server.ServerFacade;
 
 import java.util.Arrays;
 import java.util.Collection;
 
 public class PostLoginClient {
-    private State state;
+    private State state = State.LOGGEDIN;
     private final ServerFacade server;
     private String authToken;
 
@@ -29,6 +27,8 @@ public class PostLoginClient {
                 case "quit" -> "quit";
                 case "create" -> create(params[0]);
                 case "list" -> list();
+                case "join" -> join(Integer.parseInt(params[0]), params[1].toUpperCase());
+                case "observe" -> observe(Integer.parseInt(params[0]));
                 default -> help();
             };
 
@@ -56,26 +56,40 @@ public class PostLoginClient {
     public String list () {
         try {
             ListResult games = server.list(this.authToken);
-            String response = "";
+            StringBuilder response = new StringBuilder();
 
             int gameIndex = 1;
             for (GameData game : games.games()) {
-                response += gameIndex + ": " + game.gameName() + ", " + game.gameID() + ", " + game.whiteUsername() + ", " + game.blackUsername() + "\n";
+                response.append(gameIndex).append(": ")
+                        .append(game.gameName()).append(", ")
+                        .append(game.gameID()).append(", ")
+                        .append(game.whiteUsername()).append(", ")
+                        .append(game.blackUsername())
+                        .append("\n");
             }
-            return response;
+            return response.toString();
         } catch (Exception e) {
             return "Error: unauthorized\n";
         }
     }
-
+    public String join(int gameID, String teamColor) {
+        try {
+            server.join(new JoinRequest(teamColor, gameID), authToken);
+            setState(State.INCHESSGAME);
+            return "Game successfully joined\n";
+        } catch (Exception e) {
+            return "Failed to join game. Try again\n";
+        }
+    }
+    public String observe(int gameID) {
+        return gameID + " Joined as an observer\n";
+    }
     public State getState () {
         return state;
     }
     public void setState (State state) {
         this.state = state;
     }
-
-
     public void setAuth (String authToken) {
         this.authToken = authToken;
     }
