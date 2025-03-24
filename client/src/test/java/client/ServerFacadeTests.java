@@ -1,15 +1,18 @@
 package client;
 
 import org.junit.jupiter.api.*;
-import requestResultRecords.RegisterRequest;
+import requestResultRecords.*;
 import server.Server;
 import server.ServerFacade;
 
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ServerFacadeTests {
 
     private static Server server;
     static ServerFacade facade;
+    static String authToken;
+    static int gameId;
 
     @BeforeAll
     public static void init() {
@@ -25,11 +28,74 @@ public class ServerFacadeTests {
         server.stop();
     }
 
+    @BeforeEach
+    void clearDatabase() throws Exception {
+        facade.clear();
+    }
+
     @Test
     void register() throws Exception {
         var authData = facade.register(new RegisterRequest("username", "password", "email@gmail.com"));
-        Assertions.assertTrue(authData.authToken().length() > 10);
+        assertNotNull(authData);
+        assertNotNull(authData.authToken());
+        assertTrue(authData.authToken().length() > 10);
+
+        authToken = authData.authToken();
     }
 
+    @Test
+    void login() throws Exception {
+        facade.register(new RegisterRequest("username", "password", "email@gmail.com"));
+        var loginResult = facade.login(new LoginRequest("username", "password"));
 
+        assertNotNull(loginResult);
+        assertNotNull(loginResult.authToken());
+        assertTrue(loginResult.authToken().length() > 10);
+
+        authToken = loginResult.authToken();
+    }
+
+    @Test
+    void logout() throws Exception {
+        facade.register(new RegisterRequest("username", "password", "email@gmail.com"));
+        var loginResult = facade.login(new LoginRequest("username", "password"));
+        assertNotNull(loginResult.authToken());
+
+        facade.logout(loginResult.authToken());
+    }
+
+    @Test
+    void listGames() throws Exception {
+        facade.register(new RegisterRequest("username", "password", "email@gmail.com"));
+        var loginResult = facade.login(new LoginRequest("username", "password"));
+
+        var listResult = facade.list(loginResult.authToken());
+        assertNotNull(listResult);
+        assertNotNull(listResult.games());
+        assertEquals(0, listResult.games().size());  // Initially empty
+    }
+
+    @Test
+    void createGame() throws Exception {
+        facade.register(new RegisterRequest("username", "password", "email@gmail.com"));
+        var loginResult = facade.login(new LoginRequest("username", "password"));
+
+        var createResult = facade.createGame(new CreateRequest("Test Game"), loginResult.authToken());
+        assertNotNull(createResult);
+        assertTrue(createResult.gameID() > 0);
+
+        gameId = createResult.gameID();
+    }
+
+    @Test
+    void joinGame() throws Exception {
+        facade.register(new RegisterRequest("username", "password", "email@gmail.com"));
+        var loginResult = facade.login(new LoginRequest("username", "password"));
+
+        var createResult = facade.createGame(new CreateRequest("Test Game"), loginResult.authToken());
+        assertTrue(createResult.gameID() > 0);
+
+        JoinRequest joinRequest = new JoinRequest("WHITE", createResult.gameID());
+        facade.join(joinRequest, loginResult.authToken());
+    }
 }
