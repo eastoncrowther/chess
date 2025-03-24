@@ -1,7 +1,9 @@
 package ui;
 
 import requestResultRecords.LoginRequest;
+import requestResultRecords.LoginResult;
 import requestResultRecords.RegisterRequest;
+import requestResultRecords.RegisterResult;
 import server.ServerFacade;
 
 import java.util.Arrays;
@@ -9,10 +11,12 @@ import java.util.Arrays;
 public class PreLoginClient {
     private State state;
     private final ServerFacade server;
+    private String authToken;
 
     public PreLoginClient (String serverUrl, State state) {
         this.server = new ServerFacade(serverUrl);
         this.state = state;
+        authToken = null;
     }
 
     public String eval (String input) {
@@ -41,8 +45,9 @@ public class PreLoginClient {
 
     public String login(String username, String password) {
         try {
-            server.login(new LoginRequest(username, password));
+            LoginResult result = server.login(new LoginRequest(username, password));
             this.state = State.LOGGEDIN;
+            this.authToken = result.authToken();
             return username + " successfully logged in\n";
         } catch (Exception e) {
             return "Wrong username or password. Please try again\n";
@@ -54,8 +59,9 @@ public class PreLoginClient {
             return "Please enter username, password, and email\n";
         }
         try {
-            server.register(new RegisterRequest(registerInfo[0], registerInfo[1], registerInfo[2]));
+            RegisterResult result = server.register(new RegisterRequest(registerInfo[0], registerInfo[1], registerInfo[2]));
             this.state = State.LOGGEDIN;
+            this.authToken = result.authToken();
             return registerInfo[0] + " successfully registered. Logged in\n";
         } catch (Exception e) {
             if (e.getMessage().contains("403")) {
@@ -67,8 +73,10 @@ public class PreLoginClient {
             }
         }
     }
-    // this class will update the state
     public State getState () {
         return state;
+    }
+    public String getAuth () {
+        return authToken;
     }
 }

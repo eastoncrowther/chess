@@ -9,7 +9,7 @@ public class Repl {
 
     public Repl(String serverUrl, State state) {
         preLoginClient = new PreLoginClient(serverUrl, state);
-        postLoginClient = new PostLoginClient(serverUrl, state);
+        postLoginClient = new PostLoginClient(serverUrl, null);
         this.state = state;
     }
 
@@ -25,7 +25,7 @@ public class Repl {
                 case LOGGEDOUT -> System.out.print("[logged out] >");
                 case LOGGEDIN -> System.out.print("[logged in] >");
                 case INCHESSGAME -> System.out.print("[in game] >");
-            };
+            }
 
             String line = scanner.nextLine();
             try {
@@ -33,15 +33,16 @@ public class Repl {
                     System.out.println("IN CHESSGAME REPL");
                 }
                 else if (state.equals(State.LOGGEDIN)) {
+                    postLoginClient.setState(state);
+                    postLoginClient.setAuth(preLoginClient.getAuth());
                     result = postLoginClient.eval(line);
-                    System.out.print(result);
-
+                    state = postLoginClient.getState();
                 }
                 else {
                     result = preLoginClient.eval(line);
-                    System.out.print(result);
-                };
-                state = preLoginClient.getState();
+                    state = preLoginClient.getState();
+                }
+                System.out.print(result);
 
             } catch (Throwable e) {
                 String message = e.toString();
