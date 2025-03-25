@@ -81,26 +81,34 @@ public class PostLoginClient {
             return gameName + " already exists\n";
         }
     }
-    public String list () {
+    public String list() {
         try {
             ListResult games = server.list(this.authToken);
             StringBuilder response = new StringBuilder();
-
+            gameIndexToID.clear();
             int gameIndex = 1;
+
             for (GameData game : games.games()) {
                 gameIndexToID.put(gameIndex, game.gameID());
+
+                String whitePlayer = (game.whiteUsername() == null ||
+                        game.whiteUsername().isEmpty()) ? "available" : game.whiteUsername();
+                String blackPlayer = (game.blackUsername() == null ||
+                        game.blackUsername().isEmpty()) ? "available" : game.blackUsername();
+
                 response.append(gameIndex).append(": ")
                         .append(game.gameName()).append(", ")
-                        .append(game.whiteUsername()).append(", ")
-                        .append(game.blackUsername())
-                        .append("\n");
-                gameIndex ++;
+                        .append(whitePlayer).append("->WHITE, ")
+                        .append(blackPlayer).append("->BLACK\n");
+
+                gameIndex++;
             }
             return response.toString();
         } catch (Exception e) {
             return "Error: unauthorized\n";
         }
     }
+
     public String join(int gameIndex, String teamColor) {
         if (!gameIndexToID.containsKey(gameIndex)) {
             return "Invalid game index. Please check game list\n";
