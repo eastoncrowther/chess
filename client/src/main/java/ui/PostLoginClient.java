@@ -1,12 +1,11 @@
 package ui;
 
-import chess.ChessGame;
+import chess.ChessBoard;
 import model.GameData;
 import requestResultRecords.*;
 import server.ServerFacade;
 
 import java.util.Arrays;
-import java.util.Collection;
 
 public class PostLoginClient {
     private State state = State.LOGGEDIN;
@@ -66,6 +65,7 @@ public class PostLoginClient {
                         .append(game.whiteUsername()).append(", ")
                         .append(game.blackUsername())
                         .append("\n");
+                gameIndex ++;
             }
             return response.toString();
         } catch (Exception e) {
@@ -75,15 +75,29 @@ public class PostLoginClient {
     public String join(int gameID, String teamColor) {
         try {
             server.join(new JoinRequest(teamColor, gameID), authToken);
-            setState(State.INCHESSGAME);
-            return "Game successfully joined\n";
+
+            return "Game successfully joined\n" + printBoard(teamColor);
         } catch (Exception e) {
             return "Failed to join game. Try again\n";
         }
     }
     public String observe(int gameID) {
-        return gameID + " Joined as an observer\n";
+        return "observing game: " + gameID + "\n" + printBoard("WHITE");
     }
+
+    private String printBoard (String teamColor) {
+        ChessBoard board = new ChessBoard();
+        board.resetBoard();
+        PrintBoard printer = new PrintBoard(board);
+
+        String response = "";
+        switch (teamColor) {
+            case "BLACK" -> response += printer.printBlackBoard();
+            case "WHITE" -> response += printer.printWhiteBoard();
+        }
+        return response;
+    }
+
     public State getState () {
         return state;
     }
