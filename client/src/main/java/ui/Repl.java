@@ -42,6 +42,7 @@ public class Repl {
                     state = postLoginClient.getState();
                 }
                 else {
+                    preLoginClient.setState(State.LOGGEDOUT);
                     result = preLoginClient.eval(line);
                     state = preLoginClient.getState();
                 }
