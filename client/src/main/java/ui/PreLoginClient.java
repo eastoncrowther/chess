@@ -36,10 +36,13 @@ public class PreLoginClient {
         }
     }
     public String help () {
-        return "\nregister <USERNAME> <PASSWORD> <EMAIL> - to create an account\n" +
-                "login <USERNAME> <PASSWORD> - to play chess\n" +
-                "quit - playing chess\n" +
-                "help - with possible commands\n";
+        return """
+                
+                register <USERNAME> <PASSWORD> <EMAIL> - to create an account
+                login <USERNAME> <PASSWORD> - to play chess
+                quit - playing chess
+                help - with possible commands
+                """;
     }
 
 
@@ -54,7 +57,7 @@ public class PreLoginClient {
         }
     }
 
-    public String register(String[] registerInfo) throws Exception {
+    public String register(String[] registerInfo) {
         if (registerInfo.length < 3) {
             return "Please enter username, password, and email\n";
         }

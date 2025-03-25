@@ -2,6 +2,8 @@ package ui;
 
 import java.util.Scanner;
 
+import static ui.EscapeSequences.*;
+
 public class Repl {
     private final PreLoginClient preLoginClient;
     private final PostLoginClient postLoginClient;
@@ -22,17 +24,18 @@ public class Repl {
         String result = "";
         while (!result.equals("quit")) {
             switch (state) {
-                case LOGGEDOUT -> System.out.print("[logged out] >");
-                case LOGGEDIN -> System.out.print("[logged in] >");
-                case INCHESSGAME -> System.out.print("[in game] >");
+                case LOGGEDOUT -> System.out.print(SET_TEXT_COLOR_BLUE + "[logged out] > " + RESET_TEXT_COLOR);
+                case LOGGEDIN -> System.out.print(SET_TEXT_COLOR_RED + "[logged in] > " + RESET_TEXT_COLOR);
+                case INCHESSGAME -> System.out.print(SET_TEXT_COLOR_YELLOW + "[in game] > " + RESET_TEXT_COLOR);
             }
 
             String line = scanner.nextLine();
             try {
                 if (state.equals(State.INCHESSGAME)) {
-                    System.out.println("IN CHESSGAME REPL");
+                    System.out.println("IN CHESS GAME REPL");
                 }
                 else if (state.equals(State.LOGGEDIN)) {
+
                     postLoginClient.setState(state);
                     postLoginClient.setAuth(preLoginClient.getAuth());
                     result = postLoginClient.eval(line);

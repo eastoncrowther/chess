@@ -4,7 +4,7 @@ import chess.*;
 import static ui.EscapeSequences.*;
 
 public class PrintBoard {
-    private ChessBoard chessBoard;
+    private final ChessBoard chessBoard;
 
     public PrintBoard(ChessBoard chessBoard) {
         this.chessBoard = chessBoard;
@@ -13,7 +13,7 @@ public class PrintBoard {
     public String printWhiteBoard() {
         StringBuilder boardString = new StringBuilder();
         boardString.append(ERASE_SCREEN);
-        boardString.append("   a  b  c  d  e  f  g  h\n");
+        boardString.append("  a   b   c   d   e   f   g   h\n");
         for (int row = 8; row >= 1; row--) {
             boardString.append(row).append(" ");
             for (int col = 1; col <= 8; col++) {
@@ -23,14 +23,14 @@ public class PrintBoard {
             }
             boardString.append(" ").append(row).append("\n");
         }
-        boardString.append("   a  b  c  d  e  f  g  h\n");
+        boardString.append("  a   b   c   d   e   f   g   h\n");
         return boardString.toString();
     }
 
     public String printBlackBoard() {
         StringBuilder boardString = new StringBuilder();
         boardString.append(ERASE_SCREEN);
-        boardString.append("   h  g  f  e  d  c  b  a\n");
+        boardString.append("  h   g   f   e   d   c   b   a\n");
         for (int row = 1; row <= 8; row++) {
             boardString.append(row).append(" ");
             for (int col = 8; col >= 1; col--) {
@@ -40,7 +40,7 @@ public class PrintBoard {
             }
             boardString.append(" ").append(row).append("\n");
         }
-        boardString.append("   h  g  f  e  d  c  b  a\n");
+        boardString.append("  h   g   f   e   d   c   b   a\n");
         return boardString.toString();
     }
 
@@ -57,7 +57,7 @@ public class PrintBoard {
     }
 
     private String getCellColor(int row, int col) {
-        return ((row + col) % 2 == 0) ? SET_BG_COLOR_LIGHT_GREY : SET_BG_COLOR_DARK_GREY;
+        return ((row + col) % 2 == 0) ? SET_BG_COLOR_DARK_GREY : SET_BG_COLOR_LIGHT_GREY;
     }
 }
 

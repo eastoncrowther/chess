@@ -28,6 +28,7 @@ public class PostLoginClient {
                 case "list" -> list();
                 case "join" -> join(Integer.parseInt(params[0]), params[1].toUpperCase());
                 case "observe" -> observe(Integer.parseInt(params[0]));
+                case "logout" -> logout();
                 default -> help();
             };
 
@@ -36,13 +37,16 @@ public class PostLoginClient {
         }
     }
     public String help () {
-        return "\nlogout to logout\n" +
-                "create <NAME> to create a new game of chess\n" +
-                "list to list all games currently running on the server\n" +
-                "join <ID> [WHITE|BLACK] to join a game of chess\n" +
-                "observe <ID> to observe a game of chess\n" +
-                "quit - exit the program\n" +
-                "help - with possible commands\n";
+        return """
+                
+                logout to logout
+                create <NAME> to create a new game of chess
+                list to list all games currently running on the server
+                join <ID> [WHITE|BLACK] to join a game of chess
+                observe <ID> to observe a game of chess
+                quit - exit the program
+                help - with possible commands
+                """;
     }
     public String create (String gameName) {
         try {
@@ -96,6 +100,17 @@ public class PostLoginClient {
             case "WHITE" -> response += printer.printWhiteBoard();
         }
         return response;
+    }
+    public String logout () {
+        try {
+            server.logout(this.authToken);
+            this.state = State.LOGGEDOUT;
+            return "Logged out\n";
+        } catch (Exception e) {
+            return "Error logging out\n";
+        }
+
+
     }
 
     public State getState () {
