@@ -26,7 +26,12 @@ public class PreLoginClient {
             String[] params = Arrays.copyOfRange(tokens, 1, tokens.length);
             return switch (command) {
                 case "quit" -> "quit";
-                case "login" -> login(params[0], params[1]);
+                case "login" -> {
+                    if (params.length < 2) {
+                        yield "Please enter both username and password.\n";
+                    }
+                    yield login(params[0], params[1]);
+                }
                 case "register" -> register(params);
                 default -> help();
             };

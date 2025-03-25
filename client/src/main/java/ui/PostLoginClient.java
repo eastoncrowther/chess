@@ -6,8 +6,13 @@ import requestresult.*;
 import server.ServerFacade;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class PostLoginClient {
+    private Map<Integer, Integer> gameIndexToID = new HashMap<>();
+
+
     private State state = State.LOGGEDIN;
     private final ServerFacade server;
     private String authToken;
@@ -26,8 +31,8 @@ public class PostLoginClient {
                 case "quit" -> "quit";
                 case "create" -> create(params[0]);
                 case "list" -> list();
-                case "join" -> join(Integer.parseInt(params[0]), params[1].toUpperCase());
-                case "observe" -> observe(Integer.parseInt(params[0]));
+                case "join" -> processGameAction(params, true);
+                case "observe" -> processGameAction(params, false);
                 case "logout" -> logout();
                 default -> help();
             };
@@ -36,6 +41,26 @@ public class PostLoginClient {
             return e.getMessage();
         }
     }
+    private String processGameAction(String[] params, boolean isJoin) {
+        if (params.length < 1) {
+            return "Please provide a game index\n";
+        }
+
+        try {
+            int gameIndex = Integer.parseInt(params[0]);
+            if (isJoin) {
+                if (params.length < 2) {
+                    return "Please provide both the game index and a team color (WHITE or BLACK)\n";
+                }
+                return join(gameIndex, params[1].toUpperCase());
+            } else {
+                return observe(gameIndex);
+            }
+        } catch (NumberFormatException e) {
+            return "Invalid game index. Please enter a valid number\n";
+        }
+    }
+
     public String help () {
         return """
                 
@@ -63,9 +88,9 @@ public class PostLoginClient {
 
             int gameIndex = 1;
             for (GameData game : games.games()) {
+                gameIndexToID.put(gameIndex, game.gameID());
                 response.append(gameIndex).append(": ")
                         .append(game.gameName()).append(", ")
-                        .append(game.gameID()).append(", ")
                         .append(game.whiteUsername()).append(", ")
                         .append(game.blackUsername())
                         .append("\n");
@@ -76,7 +101,14 @@ public class PostLoginClient {
             return "Error: unauthorized\n";
         }
     }
-    public String join(int gameID, String teamColor) {
+    public String join(int gameIndex, String teamColor) {
+        if (!gameIndexToID.containsKey(gameIndex)) {
+            return "Invalid game index. Please check game list\n";
+        }
+        int gameID = gameIndexToID.get(gameIndex);
+        return joinByID(gameID, teamColor);
+    }
+    public String joinByID(int gameID, String teamColor) {
         try {
             server.join(new JoinRequest(teamColor, gameID), authToken);
 
