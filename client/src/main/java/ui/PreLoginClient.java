@@ -13,9 +13,9 @@ public class PreLoginClient {
     private final ServerFacade server;
     private String authToken;
 
-    public PreLoginClient (String serverUrl, State state) {
+    public PreLoginClient (String serverUrl) {
         this.server = new ServerFacade(serverUrl);
-        this.state = state;
+        this.state = State.LOGGEDOUT;
         authToken = null;
     }
 
@@ -53,6 +53,7 @@ public class PreLoginClient {
             this.authToken = result.authToken();
             return username + " successfully logged in\n";
         } catch (Exception e) {
+            this.state = State.LOGGEDOUT;
             return "Wrong username or password. Please try again\n";
         }
     }
@@ -67,12 +68,13 @@ public class PreLoginClient {
             this.authToken = result.authToken();
             return registerInfo[0] + " successfully registered. Logged in\n";
         } catch (Exception e) {
+            this.state = State.LOGGEDOUT;
             if (e.getMessage().contains("403")) {
                 return "User already exists. Please try again\n";
             } else if (e.getMessage().contains("400")) {
                 return "Invalid registration details. Please check your input.\n";
             } else {
-                return "An error occurred: " + e.getMessage() + "\n";
+                return "An error occurred\n";
             }
         }
     }

@@ -10,7 +10,7 @@ public class Repl {
     private State state;
 
     public Repl(String serverUrl, State state) {
-        preLoginClient = new PreLoginClient(serverUrl, state);
+        preLoginClient = new PreLoginClient(serverUrl);
         postLoginClient = new PostLoginClient(serverUrl, null);
         this.state = state;
     }
