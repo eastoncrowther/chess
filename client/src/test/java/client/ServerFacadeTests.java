@@ -1,7 +1,7 @@
 package client;
 
 import org.junit.jupiter.api.*;
-import requestResultRecords.*;
+import requestresult.*;
 import server.Server;
 import server.ServerFacade;
 
@@ -44,6 +44,15 @@ public class ServerFacadeTests {
     }
 
     @Test
+    void negativeRegister() {
+       assertThrows(Exception.class, () ->
+                facade.register(new RegisterRequest(null, null, null))
+       );
+    }
+
+
+
+    @Test
     void login() throws Exception {
         facade.register(new RegisterRequest("username", "password", "email@gmail.com"));
         var loginResult = facade.login(new LoginRequest("username", "password"));
@@ -56,12 +65,26 @@ public class ServerFacadeTests {
     }
 
     @Test
+    void negativeLogin() {
+        assertThrows(Exception.class, () ->
+                facade.login(new LoginRequest(null, null))
+        );
+    }
+
+    @Test
     void logout() throws Exception {
         facade.register(new RegisterRequest("username", "password", "email@gmail.com"));
         var loginResult = facade.login(new LoginRequest("username", "password"));
         assertNotNull(loginResult.authToken());
 
         facade.logout(loginResult.authToken());
+    }
+
+    @Test
+    void negativeLogout () {
+        assertThrows(Exception.class, () ->
+                facade.logout(null)
+        );
     }
 
     @Test
@@ -73,6 +96,13 @@ public class ServerFacadeTests {
         assertNotNull(listResult);
         assertNotNull(listResult.games());
         assertEquals(0, listResult.games().size());  // Initially empty
+    }
+
+    @Test
+    void negativeListGames() {
+        assertThrows(Exception.class, () ->
+                facade.list(null)
+        );
     }
 
     @Test
@@ -88,6 +118,13 @@ public class ServerFacadeTests {
     }
 
     @Test
+    void negativeCreateGame() {
+        assertThrows(Exception.class, () ->
+                facade.createGame(new CreateRequest("newGame"), null)
+        );
+    }
+
+    @Test
     void joinGame() throws Exception {
         facade.register(new RegisterRequest("username", "password", "email@gmail.com"));
         var loginResult = facade.login(new LoginRequest("username", "password"));
@@ -97,5 +134,12 @@ public class ServerFacadeTests {
 
         JoinRequest joinRequest = new JoinRequest("WHITE", createResult.gameID());
         facade.join(joinRequest, loginResult.authToken());
+    }
+
+    @Test
+    void negativeJoinGame() {
+        assertThrows(Exception.class, () ->
+                facade.join(new JoinRequest("purple", 1), null)
+        );
     }
 }

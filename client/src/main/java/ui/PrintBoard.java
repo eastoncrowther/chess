@@ -45,7 +45,9 @@ public class PrintBoard {
     }
 
     private String getPieceRepresentation(ChessPiece piece) {
-        if (piece == null) return EMPTY;
+        if (piece == null) {
+            return EMPTY;
+        }
         return switch (piece.getPieceType()) {
             case KING -> piece.getTeamColor() == ChessGame.TeamColor.WHITE ? WHITE_KING : BLACK_KING;
             case QUEEN -> piece.getTeamColor() == ChessGame.TeamColor.WHITE ? WHITE_QUEEN : BLACK_QUEEN;

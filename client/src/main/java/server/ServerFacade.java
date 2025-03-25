@@ -1,7 +1,7 @@
 package server;
 
 import com.google.gson.Gson;
-import requestResultRecords.*;
+import requestresult.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;

@@ -2,7 +2,7 @@ package ui;
 
 import chess.ChessBoard;
 import model.GameData;
-import requestResultRecords.*;
+import requestresult.*;
 import server.ServerFacade;
 
 import java.util.Arrays;

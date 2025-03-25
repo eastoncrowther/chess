@@ -1,9 +1,9 @@
 package ui;
 
-import requestResultRecords.LoginRequest;
-import requestResultRecords.LoginResult;
-import requestResultRecords.RegisterRequest;
-import requestResultRecords.RegisterResult;
+import requestresult.LoginRequest;
+import requestresult.LoginResult;
+import requestresult.RegisterRequest;
+import requestresult.RegisterResult;
 import server.ServerFacade;
 
 import java.util.Arrays;

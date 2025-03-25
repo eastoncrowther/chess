@@ -4,9 +4,9 @@ import chess.ChessGame;
 import dataaccess.*;
 import model.AuthData;
 import model.GameData;
-import requestResultRecords.CreateResult;
-import requestResultRecords.JoinRequest;
-import requestResultRecords.ListResult;
+import requestresult.CreateResult;
+import requestresult.JoinRequest;
+import requestresult.ListResult;
 
 import java.util.Collection;
 

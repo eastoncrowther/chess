@@ -6,8 +6,8 @@ import model.AuthData;
 import model.GameData;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import requestResultRecords.JoinRequest;
-import requestResultRecords.ListResult;
+import requestresult.JoinRequest;
+import requestresult.ListResult;
 
 import java.util.Arrays;
 import java.util.Collection;
