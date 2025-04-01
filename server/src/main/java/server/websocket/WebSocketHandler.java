@@ -14,7 +14,6 @@ import java.io.IOException;
 public class WebSocketHandler {
     private final ConnectionsManager connections = new ConnectionsManager();
 
-
     @OnWebSocketMessage
     public void onMessage (Session session, String message) throws IOException {
         UserGameCommand userGameCommand = new Gson().fromJson(message, UserGameCommand.class);
