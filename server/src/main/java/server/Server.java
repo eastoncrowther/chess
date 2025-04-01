@@ -1,6 +1,7 @@
 package server;
 
 import dataaccess.*;
+import server.websocket.WebSocketHandler;
 import service.BadRequestException;
 import service.GameService;
 import service.UnauthorizedException;
@@ -37,6 +38,9 @@ public class Server {
     public int run(int desiredPort) {
         Spark.port(desiredPort);
         Spark.staticFiles.location("web");
+
+        // websocket endpoint
+        Spark.webSocket("/connect", new WebSocketHandler());
 
         // user endpoints
         Spark.post("/session", new LoginRequestHandler(userService));

@@ -1,5 +1,7 @@
 package websocket.messages;
 
+import com.google.gson.Gson;
+
 import java.util.Objects;
 
 /**
@@ -8,7 +10,7 @@ import java.util.Objects;
  * Note: You can add to this class, but you should not alter the existing
  * methods.
  */
-public class ServerMessage {
+public abstract class ServerMessage {
     ServerMessageType serverMessageType;
 
     public enum ServerMessageType {
@@ -19,6 +21,10 @@ public class ServerMessage {
 
     public ServerMessage(ServerMessageType type) {
         this.serverMessageType = type;
+    }
+
+    public String toJson() {
+        return new Gson().toJson(this);
     }
 
     public ServerMessageType getServerMessageType() {
