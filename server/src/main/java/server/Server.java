@@ -40,7 +40,7 @@ public class Server {
         Spark.staticFiles.location("web");
 
         // websocket endpoint
-        Spark.webSocket("/ws", new WebSocketHandler());
+        Spark.webSocket("/ws", new WebSocketHandler(gameService));
 
         // user endpoints
         Spark.post("/session", new LoginRequestHandler(userService));

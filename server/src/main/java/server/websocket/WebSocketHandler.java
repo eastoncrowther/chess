@@ -2,17 +2,25 @@ package server.websocket;
 
 
 import com.google.gson.Gson;
+import dataaccess.DataAccessException;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import service.GameService;
 import websocket.commands.Connect;
 import websocket.commands.UserGameCommand;
+import websocket.messages.LoadGameMessage;
 
 import java.io.IOException;
 
 @WebSocket
-public class WebSocketHandler {
+public class WebSocketHandler() {
     private final ConnectionsManager connections = new ConnectionsManager();
+    GameService gameService;
+
+    public WebSocketHandler (GameService gameService) {
+        this.gameService = gameService;
+    }
 
     @OnWebSocketMessage
     public void onMessage (Session session, String message) throws IOException {
@@ -29,17 +37,18 @@ public class WebSocketHandler {
         }
     }
     private void connect (Session session, Connect command) {
-        Integer gameID = command.getGameID();
-        String auth = command.getAuthToken();
-        Connect.Role role = command.getRole();
+        try {
+            Integer gameID = command.getGameID();
+            String auth = command.getAuthToken();
+            
+            connections.updateGameID(session, gameID);
 
-        connections.updateGameID(session, gameID);
+            gameService.fetchGameData(gameID);
 
-        if (role == Connect.Role.PLAYER) {
-            connections.addPlayer(session, auth, gameID);
-        } else {
-            connections.addObserver(session, auth, gameID);
+        } catch (DataAccessException e) {
+
         }
+
     }
     private void makeMove () {
 

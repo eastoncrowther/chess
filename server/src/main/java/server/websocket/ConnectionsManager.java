@@ -12,12 +12,8 @@ import websocket.messages.ServerMessage;
 public class ConnectionsManager {
     private final ConcurrentHashMap<Session, Connect> gameSessions = new ConcurrentHashMap<>();
 
-    public void addPlayer(Session session, String authToken, int gameID) {
-        gameSessions.put(session, new Connect(authToken, gameID, Connect.Role.PLAYER));
-    }
-
-    public void addObserver(Session session, String authToken, int gameID) {
-        gameSessions.put(session, new Connect(authToken, gameID, Connect.Role.OBSERVER));
+    public void add(Session session, String authToken, int gameID) {
+        gameSessions.put(session, new Connect(authToken, gameID));
     }
 
     public void remove(Session session) {
@@ -27,7 +23,7 @@ public class ConnectionsManager {
         Connect existing = gameSessions.get(session);
         String authToken = existing.getAuthToken();
 
-        gameSessions.replace(session, new Connect(authToken, gameID, existing.getRole()));
+        gameSessions.replace(session, new Connect(authToken, gameID));
     }
     public void broadcast(Session sender, ServerMessage message, boolean includeSender) throws IOException {
         var removeList = new ArrayList<Session>();

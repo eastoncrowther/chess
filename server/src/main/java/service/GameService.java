@@ -89,6 +89,12 @@ public class GameService {
         }
     }
 
+    public GameData fetchGameData (int gameID) throws DataAccessException {
+        return gameDAO.getGame(gameID);
+    }
+
+
+
     public void clear() {
         gameDAO.clear();
         authDAO.clear();
