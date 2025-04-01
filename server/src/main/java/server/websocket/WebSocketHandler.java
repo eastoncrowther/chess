@@ -1,25 +1,33 @@
 package server.websocket;
 
 
+import chess.ChessGame;
 import com.google.gson.Gson;
 import dataaccess.DataAccessException;
+import model.AuthData;
+import model.GameData;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import service.GameService;
+import service.UserService;
 import websocket.commands.Connect;
 import websocket.commands.UserGameCommand;
+import websocket.messages.ErrorMessage;
 import websocket.messages.LoadGameMessage;
 
 import java.io.IOException;
+import java.util.Objects;
 
 @WebSocket
-public class WebSocketHandler() {
+public class WebSocketHandler {
     private final ConnectionsManager connections = new ConnectionsManager();
     GameService gameService;
+    UserService userService;
 
-    public WebSocketHandler (GameService gameService) {
+    public WebSocketHandler (GameService gameService, UserService userService) {
         this.gameService = gameService;
+        this.userService = userService;
     }
 
     @OnWebSocketMessage
@@ -38,15 +46,24 @@ public class WebSocketHandler() {
     }
     private void connect (Session session, Connect command) {
         try {
-            Integer gameID = command.getGameID();
+            int gameID = command.getGameID();
             String auth = command.getAuthToken();
-            
+
+            GameData game = gameService.fetchGameData(gameID);
+            AuthData authData = userService.fetchAuthData(auth);
+
+            String userName = authData.username();
+            ChessGame.TeamColor teamColor = getTeamColor(game, userName);
+
+
             connections.updateGameID(session, gameID);
 
-            gameService.fetchGameData(gameID);
+            LoadGameMessage loadGameMessage = new LoadGameMessage(game.game());
+            // send this message.
 
         } catch (DataAccessException e) {
-
+            ErrorMessage errorMessage = new ErrorMessage("No game data found");
+            // send this error message.
         }
 
     }
@@ -60,4 +77,12 @@ public class WebSocketHandler() {
 
     }
 
+    private ChessGame.TeamColor getTeamColor (GameData gameData, String userName) {
+        if (Objects.equals(gameData.blackUsername(), userName)) {
+            return ChessGame.TeamColor.BLACK;
+        } else if (Objects.equals(gameData.whiteUsername(), userName)) {
+            return ChessGame.TeamColor.WHITE;
+        }
+        return null;
+    }
 }

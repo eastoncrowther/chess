@@ -9,7 +9,6 @@ public class Connect extends UserGameCommand {
     public Connect (String authToken, Integer gameID) {
         super(CommandType.CONNECT, authToken, gameID);
         this.gameID = gameID;
-
     }
     public Integer getGameID() {
         return gameID;
