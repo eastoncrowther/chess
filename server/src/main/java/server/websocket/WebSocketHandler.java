@@ -15,13 +15,15 @@ import websocket.commands.Connect;
 import websocket.commands.UserGameCommand;
 import websocket.messages.ErrorMessage;
 import websocket.messages.LoadGameMessage;
+import websocket.messages.NotificationMessage;
+import websocket.messages.ServerMessage;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Objects;
 
 @WebSocket
 public class WebSocketHandler {
-    private final ConnectionsManager connections = new ConnectionsManager();
     GameService gameService;
     UserService userService;
 
@@ -53,10 +55,16 @@ public class WebSocketHandler {
             AuthData authData = userService.fetchAuthData(auth);
 
             String userName = authData.username();
-            ChessGame.TeamColor teamColor = getTeamColor(game, userName);
 
 
-            connections.updateGameID(session, gameID);
+            NotificationMessage message;
+            switch (getTeamColor(game, userName)) {
+                case WHITE -> message = new NotificationMessage("%s has joined as white".formatted(userName));
+                case BLACK -> message = new NotificationMessage("%s has joined as black".formatted(userName));
+                case null -> message = new NotificationMessage("%s has joined as an observer".formatted(userName));
+            };
+
+
 
             LoadGameMessage loadGameMessage = new LoadGameMessage(game.game());
             // send this message.
@@ -76,7 +84,6 @@ public class WebSocketHandler {
     private void resign () {
 
     }
-
     private ChessGame.TeamColor getTeamColor (GameData gameData, String userName) {
         if (Objects.equals(gameData.blackUsername(), userName)) {
             return ChessGame.TeamColor.BLACK;
@@ -85,4 +92,27 @@ public class WebSocketHandler {
         }
         return null;
     }
+
+    public void broadcast(Session sender, ServerMessage message, boolean includeSender) throws IOException {
+        var removeList = new ArrayList<Session>();
+
+        for (Session session : gameSessions.keySet()) {
+            boolean sameGame = gameSessions.get(session).equals(gameSessions.get(sender));
+            boolean isSender = session == sender;
+
+            if (session.isOpen()) {
+                if ((includeSender || !isSender) && sameGame) {
+                    session.getRemote().sendString(message.toJson());
+                }
+            } else {
+                removeList.add(session);
+            }
+        }
+
+        // remove disconnected sessions
+        for (Session session : removeList) {
+            gameSessions.remove(session);
+        }
+    }
+
 }
