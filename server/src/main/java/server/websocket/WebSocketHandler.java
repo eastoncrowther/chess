@@ -71,6 +71,7 @@ public class WebSocketHandler {
             AuthData authData = userService.fetchAuthData(auth);
 
             String userName = authData.username();
+            gameSessions.put(session, command);
 
             NotificationMessage message;
             switch (getTeamColor(game, userName)) {
@@ -88,7 +89,7 @@ public class WebSocketHandler {
             ErrorMessage errorMessage = new ErrorMessage("No game data found");
             broadcastError(session, errorMessage);
         } catch (IOException e) {
-            ErrorMessage errorMessage = new ErrorMessage("A problem occured");
+            ErrorMessage errorMessage = new ErrorMessage("A problem occurred");
             broadcastError(session, errorMessage);
         }
     }
@@ -111,26 +112,36 @@ public class WebSocketHandler {
     }
 
     public void broadcast(Session sender, ServerMessage message, boolean includeSender) throws IOException {
+        System.out.println("In broadcast...");
+
         var removeList = new ArrayList<Session>();
+        Connect senderConnect = gameSessions.get(sender);
 
         for (Session session : gameSessions.keySet()) {
-            boolean sameGame = gameSessions.get(session).equals(gameSessions.get(sender));
+            Connect connect = gameSessions.get(session);
+
+            boolean sameGame = senderConnect != null
+                    && connect != null
+                    && Objects.equals(senderConnect.getGameID(), connect.getGameID());
             boolean isSender = session == sender;
 
             if (session.isOpen()) {
                 if ((includeSender || !isSender) && sameGame) {
                     session.getRemote().sendString(message.toJson());
+                    System.out.println("Sent message to session: " + session);
                 }
             } else {
                 removeList.add(session);
             }
         }
 
-        // remove disconnected sessions
+        // Remove disconnected sessions
         for (Session session : removeList) {
             gameSessions.remove(session);
+            System.out.println("Removed closed session: " + session);
         }
     }
+
     public void broadcastError(Session sender, ErrorMessage errorMessage) throws IOException {
         sender.getRemote().sendString(errorMessage.toJson());
     }
