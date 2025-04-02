@@ -1,12 +1,16 @@
 package server;
 
 import dataaccess.*;
+import org.eclipse.jetty.websocket.api.Session;
 import server.websocket.WebSocketHandler;
 import service.BadRequestException;
 import service.GameService;
 import service.UnauthorizedException;
 import service.UserService;
 import spark.Spark;
+import websocket.commands.Connect;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Server {
     AuthDAO auths;
@@ -15,6 +19,8 @@ public class Server {
 
     UserService userService;
     GameService gameService;
+
+    ConcurrentHashMap<Session, Connect> gameSessions;
 
     public Server () {
         try {
@@ -32,6 +38,8 @@ public class Server {
         } catch (DataAccessException e) {
             throw new RuntimeException(e);
         }
+
+        gameSessions = new ConcurrentHashMap<>();
     }
 
 
@@ -40,7 +48,7 @@ public class Server {
         Spark.staticFiles.location("web");
 
         // websocket endpoint
-        Spark.webSocket("/ws", new WebSocketHandler(gameService, userService));
+        Spark.webSocket("/ws", new WebSocketHandler(gameService, userService, gameSessions));
 
         // user endpoints
         Spark.post("/session", new LoginRequestHandler(userService));

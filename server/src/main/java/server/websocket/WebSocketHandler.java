@@ -3,6 +3,7 @@ package server.websocket;
 
 import chess.ChessGame;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import dataaccess.DataAccessException;
 import model.AuthData;
 import model.GameData;
@@ -13,6 +14,7 @@ import service.GameService;
 import service.UserService;
 import websocket.commands.Connect;
 import websocket.commands.UserGameCommand;
+import websocket.commands.UserGameCommandDeserializer;
 import websocket.messages.ErrorMessage;
 import websocket.messages.LoadGameMessage;
 import websocket.messages.NotificationMessage;
@@ -21,20 +23,33 @@ import websocket.messages.ServerMessage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 @WebSocket
 public class WebSocketHandler {
     GameService gameService;
     UserService userService;
+    ConcurrentHashMap<Session, Connect> gameSessions;
 
-    public WebSocketHandler (GameService gameService, UserService userService) {
+    public WebSocketHandler (GameService gameService,
+                             UserService userService,
+                             ConcurrentHashMap<Session, Connect> gameSessions) {
         this.gameService = gameService;
         this.userService = userService;
+        this.gameSessions = gameSessions;
     }
 
     @OnWebSocketMessage
     public void onMessage (Session session, String message) throws IOException {
-        UserGameCommand userGameCommand = new Gson().fromJson(message, UserGameCommand.class);
+        System.out.println("Recieved: " + message);
+
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapter(UserGameCommand.class, new UserGameCommandDeserializer())
+                .create();
+
+        UserGameCommand userGameCommand = gson.fromJson(message, UserGameCommand.class);
+
+        System.out.println("User game command: " + userGameCommand);
         switch (userGameCommand.getCommandType()) {
             // make a connection as a player or observer
             case CONNECT -> connect(session, (Connect) userGameCommand);
@@ -46,8 +61,9 @@ public class WebSocketHandler {
             case RESIGN -> resign();
         }
     }
-    private void connect (Session session, Connect command) {
+    private void connect (Session session, Connect command) throws IOException {
         try {
+            System.out.println("In connect function...");
             int gameID = command.getGameID();
             String auth = command.getAuthToken();
 
@@ -56,24 +72,25 @@ public class WebSocketHandler {
 
             String userName = authData.username();
 
-
             NotificationMessage message;
             switch (getTeamColor(game, userName)) {
                 case WHITE -> message = new NotificationMessage("%s has joined as white".formatted(userName));
                 case BLACK -> message = new NotificationMessage("%s has joined as black".formatted(userName));
                 case null -> message = new NotificationMessage("%s has joined as an observer".formatted(userName));
             };
-
+            broadcast(session, message, true);
 
 
             LoadGameMessage loadGameMessage = new LoadGameMessage(game.game());
-            // send this message.
+            broadcast(session, loadGameMessage, true);
 
         } catch (DataAccessException e) {
             ErrorMessage errorMessage = new ErrorMessage("No game data found");
-            // send this error message.
+            broadcastError(session, errorMessage);
+        } catch (IOException e) {
+            ErrorMessage errorMessage = new ErrorMessage("A problem occured");
+            broadcastError(session, errorMessage);
         }
-
     }
     private void makeMove () {
 
@@ -114,5 +131,7 @@ public class WebSocketHandler {
             gameSessions.remove(session);
         }
     }
-
+    public void broadcastError(Session sender, ErrorMessage errorMessage) throws IOException {
+        sender.getRemote().sendString(errorMessage.toJson());
+    }
 }
