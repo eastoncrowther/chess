@@ -2,21 +2,17 @@ package websocket.commands;
 
 import chess.ChessMove;
 import chess.ChessPiece;
-import chess.ChessPosition;
+import com.google.gson.annotations.SerializedName;
 
 public class MakeMove extends UserGameCommand {
-    // need to add a chessmove member
-
-    // make move a 2d array
-
     ChessPiece promotionPiece;
+    
+    ChessMove move;
 
-    int[][] chessMove;
-
-    public MakeMove(CommandType commandType, String authToken, Integer gameID, int[][] chessMove, ChessPiece promotionPiece) {
-        super(commandType, authToken, gameID);
+    public MakeMove(String authToken, Integer gameID, ChessMove move, ChessPiece promotionPiece) {
+        super(CommandType.MAKE_MOVE, authToken, gameID);
         this.promotionPiece = promotionPiece;
-        this.chessMove = chessMove;
+        this.move = move;
     }
 
     public ChessPiece getPromotionPiece() {
@@ -24,9 +20,6 @@ public class MakeMove extends UserGameCommand {
     }
 
     public ChessMove getChessMove() {
-        ChessPosition starPosition = new ChessPosition(chessMove[0][0], chessMove[0][1]);
-        ChessPosition endPosition = new ChessPosition(chessMove[1][0], chessMove[1][1]);
-
-        return new ChessMove(starPosition, endPosition, promotionPiece.getPieceType());
+        return move;
     }
 }

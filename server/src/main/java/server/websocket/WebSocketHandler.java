@@ -99,10 +99,11 @@ public class WebSocketHandler {
             int gameID = command.getGameID();
             String auth = command.getAuthToken();
             GameData game = gameService.fetchGameData(gameID);
+            System.out.println("GameData: " + game);
             AuthData authData = userService.fetchAuthData(auth);
 
 
-
+            // command.getChessMove returns null!
             System.out.println(command.getChessMove());
 
 
