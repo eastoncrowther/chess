@@ -10,12 +10,12 @@ public class UserGameCommandDeserializer implements JsonDeserializer<UserGameCom
         JsonObject jsonObject = jsonElement.getAsJsonObject();
         String commandType = jsonObject.get("commandType").getAsString();
 
-        switch (commandType) {
-            case "CONNECT":
-                return new Gson().fromJson(jsonElement, Connect.class);
-            default:
-                throw new JsonParseException("Unknown command type: " + commandType);
+        Gson gson = new Gson();
 
-        }
+        return switch (commandType) {
+            case "CONNECT" -> gson.fromJson(jsonElement, Connect.class);
+            case "MAKE_MOVE" -> gson.fromJson(jsonElement, MakeMove.class);
+            default -> throw new JsonParseException("Unknown command type: " + commandType);
+        };
     }
 }

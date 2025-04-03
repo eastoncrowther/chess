@@ -13,6 +13,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import service.GameService;
 import service.UserService;
 import websocket.commands.Connect;
+import websocket.commands.MakeMove;
 import websocket.commands.UserGameCommand;
 import websocket.commands.UserGameCommandDeserializer;
 import websocket.messages.ErrorMessage;
@@ -54,7 +55,7 @@ public class WebSocketHandler {
             // make a connection as a player or observer
             case CONNECT -> connect(session, (Connect) userGameCommand);
             // used to request to make a move in a game
-            case MAKE_MOVE -> makeMove();
+            case MAKE_MOVE -> makeMove(session, (MakeMove) userGameCommand);
             // tells the server you are leaving the game so it will stop sending you notifications
             case LEAVE -> leave();
             // forfeits the match and ends the game (no more moves can be made)
@@ -66,7 +67,6 @@ public class WebSocketHandler {
             System.out.println("In connect function...");
             int gameID = command.getGameID();
             String auth = command.getAuthToken();
-
             GameData game = gameService.fetchGameData(gameID);
             AuthData authData = userService.fetchAuthData(auth);
 
@@ -93,8 +93,23 @@ public class WebSocketHandler {
             broadcastError(session, errorMessage);
         }
     }
-    private void makeMove () {
+    private void makeMove (Session session, MakeMove command) throws IOException {
+        try {
+            System.out.println("In makeMove function...");
+            int gameID = command.getGameID();
+            String auth = command.getAuthToken();
+            GameData game = gameService.fetchGameData(gameID);
+            AuthData authData = userService.fetchAuthData(auth);
 
+
+
+            System.out.println(command.getChessMove());
+
+
+        } catch (DataAccessException e) {
+            ErrorMessage errorMessage = new ErrorMessage("No game data found");
+            broadcastError(session, errorMessage);
+        }
     }
     private void leave () {
 
