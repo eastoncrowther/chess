@@ -153,6 +153,7 @@ public class WebSocketHandler {
         }
         AuthData authData = context.authData();
         GameData gameData = context.gameData();
+        ChessGame game = gameData.game();
         String userName = authData.username();
 
         ChessGame.TeamColor playerColor = getTeamColor(gameData, userName);
@@ -161,6 +162,11 @@ public class WebSocketHandler {
             broadcastError(session, new ErrorMessage("Failed to resign: Observers cannot resign."));
             return;
         }
+        if (game.isGameEnded()) {
+            broadcastError(session, new ErrorMessage("Failed to resign. The game is already over."));
+            return;
+        }
+        game.setGameEnded(true);
     }
     private ChessGame.TeamColor getTeamColor (GameData gameData, String userName) {
         if (Objects.equals(gameData.blackUsername(), userName)) {

@@ -14,10 +14,12 @@ public class ChessGame {
 
     private TeamColor team;
     private ChessBoard chessBoard = new ChessBoard();
+    private boolean gameEnded;
 
     public ChessGame() {
         chessBoard.resetBoard();
         this.team = TeamColor.WHITE;
+        gameEnded = false;
     }
 
     /**
@@ -35,8 +37,6 @@ public class ChessGame {
     public void setTeamTurn(TeamColor team) {
         this.team = team;
     }
-
-
 
     /**
      * Enum identifying the 2 possible teams in a chess game
@@ -194,6 +194,13 @@ public class ChessGame {
      */
     public ChessBoard getBoard() {
         return chessBoard;
+    }
+
+    public boolean isGameEnded () {
+        return gameEnded;
+    }
+    public void setGameEnded (boolean gameEnded) {
+        this.gameEnded = gameEnded;
     }
 
     @Override
