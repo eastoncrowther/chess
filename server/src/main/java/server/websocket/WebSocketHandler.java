@@ -51,7 +51,7 @@ public class WebSocketHandler {
     public void onMessage (Session session, String message) throws IOException {
         System.out.println("Received: " + message);
         UserGameCommand userGameCommand = gson.fromJson(message, UserGameCommand.class);
-        
+
         switch (userGameCommand.getCommandType()) {
             case CONNECT -> connect(session, (Connect) userGameCommand);
             case MAKE_MOVE -> makeMove(session, (MakeMove) userGameCommand);
@@ -80,9 +80,8 @@ public class WebSocketHandler {
         }
 
         String userName = authData.username();
-        gameSessions.put(session, command); // Store session info
+        gameSessions.put(session, command);
 
-        // Determine player role
         ChessGame.TeamColor playerColor = getTeamColor(gameData, userName);
         String roleDescription;
         if (playerColor == ChessGame.TeamColor.WHITE) {
@@ -93,61 +92,17 @@ public class WebSocketHandler {
             roleDescription = "as an observer";
         }
 
-        // Notify others
         var notification = new NotificationMessage(String.format("%s joined the game %s.", userName, roleDescription));
         broadcast(session, notification, false);
 
-        // Send current game state to the connecting client
         var loadGameMsg = new LoadGameMessage(gameData.game());
         session.getRemote().sendString(gson.toJson(loadGameMsg));
 
         System.out.println("Session " + session.hashCode() + " connected successfully.");
     }
     private void makeMove (Session session, MakeMove command) throws IOException {
-        try {
-            System.out.println("In makeMove function...");
 
-            ValidationContext context = fetchAndValidateAuthAndGame(session, command);
-            if (context == null) {
-                return;
-            }
-            AuthData authData = context.authData();
-            GameData gameData = context.gameData();
-            ChessGame game = gameData.game();
-            String userName = authData.username();
-            ChessMove move = command.getChessMove();
-
-            // if participant role is observer, they shouldn't be able to make moves
-            ChessGame.TeamColor teamColor = getTeamColor(gameData, userName);
-            if (teamColor == null) {
-                ErrorMessage errorMessage = new ErrorMessage("Failed to make move: observer cannot make move");
-                broadcastError(session, errorMessage);
-            }
-            // if it isn't the player's turn
-            if (teamColor != gameData.game().getTeamTurn()) {
-                ErrorMessage errorMessage = new ErrorMessage("Failed to make move: move out of turn");
-                broadcastError(session, errorMessage);
-            }
-            // check to make sure the move is valid
-            if (gameData.game().validMoves(move.getStartPosition()).contains(move)) {
-                gameData.game().makeMove(move);
-                String message = userName + " made move: " + move;
-                NotificationMessage notificationMessage = new NotificationMessage(message);
-                broadcast(session, notificationMessage, false);
-            }
-            else {
-                ErrorMessage errorMessage = new ErrorMessage("Failed to make move: invalid move");
-                broadcastError(session, errorMessage);
-            }
-
-        } catch (Exception e) {
-            System.err.println("Unexpected exception fetching game data:");
-            ErrorMessage errorMessage = new ErrorMessage("Internal server error fetching game.");
-            broadcastError(session, errorMessage);
-        }
-    }
-    private void leave (Session session, Leave command) throws IOException {
-        System.out.println("Processing LEAVE for session " + session.hashCode() + " game " + command.getGameID());
+        System.out.println("In makeMove function...");
 
         ValidationContext context = fetchAndValidateAuthAndGame(session, command);
         if (context == null) {
@@ -155,16 +110,57 @@ public class WebSocketHandler {
         }
         AuthData authData = context.authData();
         GameData gameData = context.gameData();
-
+        ChessGame game = gameData.game();
         String userName = authData.username();
+        ChessMove move = command.getChessMove();
 
+        // if participant role is observer, they shouldn't be able to make moves
+        ChessGame.TeamColor teamColor = getTeamColor(gameData, userName);
+        if (teamColor == null) {
+            broadcastError(session, new ErrorMessage("Failed to make move: observer cannot make move."));
+            return;
+        }
+        // if it isn't the player's turn
+        if (teamColor != game.getTeamTurn()) {
+            broadcastError(session, new ErrorMessage("Failed to make move: move out of turn."));
+            return;
+        }
 
+        try {
+            game.makeMove(move);
+            System.out.println(userName + " made move: " + move);
+        } catch (InvalidMoveException e) {
+            broadcastError(session, new ErrorMessage("Failed to make move: invalid move"));
+        }
+    }
 
+    private void leave (Session session, Leave command) throws IOException {
+        System.out.println("Processing LEAVE for session " + session.hashCode() + " game " + command.getGameID());
 
-
+        ValidationContext context = fetchAndValidateAuthAndGame(session, command);
+        if (context == null) {
+            return;
+        }
+        String userName = context.authData.username();
+        broadcast(session, new NotificationMessage(userName + " left the game."), false);
     }
     private void resign (Session session, Resign command) throws IOException {
-        System.out.println("In resign function...");
+        System.out.println("Processing RESIGN for session " + session.hashCode() + " game " + command.getGameID());
+
+        ValidationContext context = fetchAndValidateAuthAndGame(session, command);
+        if (context == null) {
+            return;
+        }
+        AuthData authData = context.authData();
+        GameData gameData = context.gameData();
+        String userName = authData.username();
+
+        ChessGame.TeamColor playerColor = getTeamColor(gameData, userName);
+
+        if (playerColor == null) {
+            broadcastError(session, new ErrorMessage("Failed to resign: Observers cannot resign."));
+            return;
+        }
     }
     private ChessGame.TeamColor getTeamColor (GameData gameData, String userName) {
         if (Objects.equals(gameData.blackUsername(), userName)) {
