@@ -3,6 +3,7 @@ package server.websocket;
 
 import chess.ChessGame;
 import chess.ChessMove;
+import chess.ChessPiece;
 import chess.InvalidMoveException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -14,10 +15,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import service.GameService;
 import service.UserService;
-import websocket.commands.Connect;
-import websocket.commands.MakeMove;
-import websocket.commands.UserGameCommand;
-import websocket.commands.UserGameCommandDeserializer;
+import websocket.commands.*;
 import websocket.messages.ErrorMessage;
 import websocket.messages.LoadGameMessage;
 import websocket.messages.NotificationMessage;
@@ -59,9 +57,9 @@ public class WebSocketHandler {
             // used to request to make a move in a game
             case MAKE_MOVE -> makeMove(session, (MakeMove) userGameCommand);
             // tells the server you are leaving the game so it will stop sending you notifications
-            case LEAVE -> leave();
+            case LEAVE -> leave(session, (Leave) userGameCommand);
             // forfeits the match and ends the game (no more moves can be made)
-            case RESIGN -> resign();
+            case RESIGN -> resign(session, (Resign) userGameCommand);
         }
     }
     private void connect (Session session, Connect command) throws IOException {
@@ -96,38 +94,56 @@ public class WebSocketHandler {
         }
     }
     private void makeMove (Session session, MakeMove command) throws IOException {
-        System.out.println("In makeMove function...");
-        int gameID = command.getGameID();
-        String auth = command.getAuthToken();
-        System.out.println("Attempting to fetch GameData for GameID: " + gameID);
-        GameData game = null;
         try {
-            game = gameService.fetchGameData(gameID);
+            System.out.println("In makeMove function...");
+            int gameID = command.getGameID();
+            String auth = command.getAuthToken();
+            System.out.println("Attempting to fetch GameData for GameID: " + gameID);
+            GameData game = gameService.fetchGameData(gameID);
+            System.out.println("GameData fetched successfully: " + game);
+
+            AuthData authData = userService.fetchAuthData(auth);
+            ChessMove move = command.getChessMove();
+            System.out.println("ChessMove from command: " + move);
+            String userName = authData.username();
+
+            // if participant role is observer, they shouldn't be able to make moves
+            ChessGame.TeamColor teamColor = getTeamColor(game, userName);
+            if (teamColor == null) {
+                ErrorMessage errorMessage = new ErrorMessage("Failed to make move: observer cannot make move");
+                broadcastError(session, errorMessage);
+            }
+            // if it isn't the player's turn
+            if (teamColor != game.game().getTeamTurn()) {
+                ErrorMessage errorMessage = new ErrorMessage("Failed to make move: move out of turn");
+            }
+            // check to make sure the move is valid
+            if (game.game().validMoves(move.getStartPosition()).contains(move)) {
+                game.game().makeMove(move);
+                String message = userName + " made move: " + move;
+                NotificationMessage notificationMessage = new NotificationMessage(message);
+                broadcast(session, notificationMessage, false);
+            }
+            else {
+                ErrorMessage errorMessage = new ErrorMessage("Failed to make move: invalid move");
+                broadcastError(session, errorMessage);
+            }
+
         } catch (DataAccessException e) {
             System.err.println("DataAccessException fetching game data: " + e.getMessage());
             ErrorMessage errorMessage = new ErrorMessage("No game data found");
             broadcastError(session, errorMessage);
-            return;
         } catch (Exception e) {
             System.err.println("Unexpected exception fetching game data:");
-            e.printStackTrace(); // Print the full stack trace
             ErrorMessage errorMessage = new ErrorMessage("Internal server error fetching game.");
             broadcastError(session, errorMessage);
-            return;
         }
-
-        System.out.println("GameData fetched successfully: " + game);
-
-        AuthData authData = userService.fetchAuthData(auth);
-
-        ChessMove theMove = command.getChessMove();
-        System.out.println("ChessMove from command: " + theMove);
     }
-    private void leave () {
-
+    private void leave (Session session, Leave command) throws IOException {
+        System.out.println("In leave function...");
     }
-    private void resign () {
-
+    private void resign (Session session, Resign command) throws IOException {
+        System.out.println("In resign function...");
     }
     private ChessGame.TeamColor getTeamColor (GameData gameData, String userName) {
         if (Objects.equals(gameData.blackUsername(), userName)) {
