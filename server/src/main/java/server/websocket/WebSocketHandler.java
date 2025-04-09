@@ -31,6 +31,8 @@ public class WebSocketHandler {
     GameService gameService;
     UserService userService;
     ConcurrentHashMap<Session, Connect> gameSessions;
+    private final Gson gson;
+    private record ValidationContext(AuthData authData, GameData gameData) {}
 
     public WebSocketHandler (GameService gameService,
                              UserService userService,
@@ -38,88 +40,97 @@ public class WebSocketHandler {
         this.gameService = gameService;
         this.userService = userService;
         this.gameSessions = gameSessions;
+
+        gson = new GsonBuilder()
+                .registerTypeAdapter(UserGameCommand.class, new UserGameCommandDeserializer())
+                .create();
+
     }
 
     @OnWebSocketMessage
     public void onMessage (Session session, String message) throws IOException {
-        System.out.println("Recieved: " + message);
-
-        Gson gson = new GsonBuilder()
-                .registerTypeAdapter(UserGameCommand.class, new UserGameCommandDeserializer())
-                .create();
-
+        System.out.println("Received: " + message);
         UserGameCommand userGameCommand = gson.fromJson(message, UserGameCommand.class);
-
-        System.out.println("User game command: " + userGameCommand);
+        
         switch (userGameCommand.getCommandType()) {
-            // make a connection as a player or observer
             case CONNECT -> connect(session, (Connect) userGameCommand);
-            // used to request to make a move in a game
             case MAKE_MOVE -> makeMove(session, (MakeMove) userGameCommand);
-            // tells the server you are leaving the game so it will stop sending you notifications
             case LEAVE -> leave(session, (Leave) userGameCommand);
-            // forfeits the match and ends the game (no more moves can be made)
             case RESIGN -> resign(session, (Resign) userGameCommand);
+            default -> broadcastError(session, new ErrorMessage("Error: Unknown command type."));
         }
     }
     private void connect (Session session, Connect command) throws IOException {
+        System.out.println("Connecting session " + session.hashCode() + " for game " + command.getGameID());
+        AuthData authData;
+        GameData gameData;
+
         try {
-            System.out.println("In connect function...");
-            int gameID = command.getGameID();
-            String auth = command.getAuthToken();
-            GameData game = gameService.fetchGameData(gameID);
-            AuthData authData = userService.fetchAuthData(auth);
-
-            String userName = authData.username();
-            gameSessions.put(session, command);
-
-            NotificationMessage message;
-            switch (getTeamColor(game, userName)) {
-                case WHITE -> message = new NotificationMessage("%s has joined as white".formatted(userName));
-                case BLACK -> message = new NotificationMessage("%s has joined as black".formatted(userName));
-                case null -> message = new NotificationMessage("%s has joined as an observer".formatted(userName));
-            };
-            broadcast(session, message, true);
-
-
-            LoadGameMessage loadGameMessage = new LoadGameMessage(game.game());
-            broadcast(session, loadGameMessage, true);
-
+            authData = userService.fetchAuthData(command.getAuthToken());
+            if (authData == null) {
+                throw new DataAccessException("Authentication token is invalid or expired.");
+            }
+            gameData = gameService.fetchGameData(command.getGameID());
+            if (gameData == null) {
+                throw new DataAccessException("Game not found with ID: " + command.getGameID());
+            }
         } catch (DataAccessException e) {
-            ErrorMessage errorMessage = new ErrorMessage("No game data found");
-            broadcastError(session, errorMessage);
-        } catch (IOException e) {
-            ErrorMessage errorMessage = new ErrorMessage("A problem occurred");
-            broadcastError(session, errorMessage);
+            broadcastError(session, new ErrorMessage("Error: " + e.getMessage()));
+            return;
         }
+
+        String userName = authData.username();
+        gameSessions.put(session, command); // Store session info
+
+        // Determine player role
+        ChessGame.TeamColor playerColor = getTeamColor(gameData, userName);
+        String roleDescription;
+        if (playerColor == ChessGame.TeamColor.WHITE) {
+            roleDescription = "as White";
+        } else if (playerColor == ChessGame.TeamColor.BLACK) {
+            roleDescription = "as Black";
+        } else {
+            roleDescription = "as an observer";
+        }
+
+        // Notify others
+        var notification = new NotificationMessage(String.format("%s joined the game %s.", userName, roleDescription));
+        broadcast(session, notification, false);
+
+        // Send current game state to the connecting client
+        var loadGameMsg = new LoadGameMessage(gameData.game());
+        session.getRemote().sendString(gson.toJson(loadGameMsg));
+
+        System.out.println("Session " + session.hashCode() + " connected successfully.");
     }
     private void makeMove (Session session, MakeMove command) throws IOException {
         try {
             System.out.println("In makeMove function...");
-            int gameID = command.getGameID();
-            String auth = command.getAuthToken();
-            System.out.println("Attempting to fetch GameData for GameID: " + gameID);
-            GameData game = gameService.fetchGameData(gameID);
-            System.out.println("GameData fetched successfully: " + game);
 
-            AuthData authData = userService.fetchAuthData(auth);
-            ChessMove move = command.getChessMove();
-            System.out.println("ChessMove from command: " + move);
+            ValidationContext context = fetchAndValidateAuthAndGame(session, command);
+            if (context == null) {
+                return;
+            }
+            AuthData authData = context.authData();
+            GameData gameData = context.gameData();
+            ChessGame game = gameData.game();
             String userName = authData.username();
+            ChessMove move = command.getChessMove();
 
             // if participant role is observer, they shouldn't be able to make moves
-            ChessGame.TeamColor teamColor = getTeamColor(game, userName);
+            ChessGame.TeamColor teamColor = getTeamColor(gameData, userName);
             if (teamColor == null) {
                 ErrorMessage errorMessage = new ErrorMessage("Failed to make move: observer cannot make move");
                 broadcastError(session, errorMessage);
             }
             // if it isn't the player's turn
-            if (teamColor != game.game().getTeamTurn()) {
+            if (teamColor != gameData.game().getTeamTurn()) {
                 ErrorMessage errorMessage = new ErrorMessage("Failed to make move: move out of turn");
+                broadcastError(session, errorMessage);
             }
             // check to make sure the move is valid
-            if (game.game().validMoves(move.getStartPosition()).contains(move)) {
-                game.game().makeMove(move);
+            if (gameData.game().validMoves(move.getStartPosition()).contains(move)) {
+                gameData.game().makeMove(move);
                 String message = userName + " made move: " + move;
                 NotificationMessage notificationMessage = new NotificationMessage(message);
                 broadcast(session, notificationMessage, false);
@@ -129,10 +140,6 @@ public class WebSocketHandler {
                 broadcastError(session, errorMessage);
             }
 
-        } catch (DataAccessException e) {
-            System.err.println("DataAccessException fetching game data: " + e.getMessage());
-            ErrorMessage errorMessage = new ErrorMessage("No game data found");
-            broadcastError(session, errorMessage);
         } catch (Exception e) {
             System.err.println("Unexpected exception fetching game data:");
             ErrorMessage errorMessage = new ErrorMessage("Internal server error fetching game.");
@@ -140,7 +147,21 @@ public class WebSocketHandler {
         }
     }
     private void leave (Session session, Leave command) throws IOException {
-        System.out.println("In leave function...");
+        System.out.println("Processing LEAVE for session " + session.hashCode() + " game " + command.getGameID());
+
+        ValidationContext context = fetchAndValidateAuthAndGame(session, command);
+        if (context == null) {
+            return;
+        }
+        AuthData authData = context.authData();
+        GameData gameData = context.gameData();
+
+        String userName = authData.username();
+
+
+
+
+
     }
     private void resign (Session session, Resign command) throws IOException {
         System.out.println("In resign function...");
@@ -188,4 +209,41 @@ public class WebSocketHandler {
     public void broadcastError(Session sender, ErrorMessage errorMessage) throws IOException {
         sender.getRemote().sendString(errorMessage.toJson());
     }
+
+
+    private ValidationContext fetchAndValidateAuthAndGame(Session session, UserGameCommand command) throws IOException {
+        AuthData authData = null;
+        GameData gameData = null;
+        String errorMessage = null;
+
+        try {
+
+            authData = userService.fetchAuthData(command.getAuthToken());
+            if (authData == null) {
+                errorMessage = "Authentication token is invalid or missing.";
+            } else {
+                gameData = gameService.fetchGameData(command.getGameID());
+                if (gameData == null) {
+                    errorMessage = "Game not found with ID: " + command.getGameID();
+                }
+            }
+        } catch (DataAccessException e) {
+            System.err.println("Data access error during validation: " + e.getMessage());
+            errorMessage = "Database error fetching game/auth data: " + e.getMessage();
+        } catch (Exception e) { // Catch unexpected errors during fetch
+            System.err.println("Unexpected error during validation: " + e.getMessage());
+            errorMessage = "An unexpected server error occurred during data retrieval.";
+        }
+
+        if (errorMessage != null) {
+            broadcastError(session, new ErrorMessage("Error: " + errorMessage));
+            return null;
+        }
+
+        return new ValidationContext(authData, gameData);
+    }
+
+
+
+
 }
