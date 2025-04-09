@@ -5,6 +5,7 @@ import com.google.gson.*;
 import java.lang.reflect.Type;
 
 public class UserGameCommandDeserializer implements JsonDeserializer<UserGameCommand> {
+
     @Override
     public UserGameCommand deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
         JsonObject jsonObject = jsonElement.getAsJsonObject();

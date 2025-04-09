@@ -2,6 +2,8 @@ package server.websocket;
 
 
 import chess.ChessGame;
+import chess.ChessMove;
+import chess.InvalidMoveException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import dataaccess.DataAccessException;
@@ -94,23 +96,32 @@ public class WebSocketHandler {
         }
     }
     private void makeMove (Session session, MakeMove command) throws IOException {
+        System.out.println("In makeMove function...");
+        int gameID = command.getGameID();
+        String auth = command.getAuthToken();
+        System.out.println("Attempting to fetch GameData for GameID: " + gameID);
+        GameData game = null;
         try {
-            System.out.println("In makeMove function...");
-            int gameID = command.getGameID();
-            String auth = command.getAuthToken();
-            GameData game = gameService.fetchGameData(gameID);
-            System.out.println("GameData: " + game);
-            AuthData authData = userService.fetchAuthData(auth);
-
-
-            // command.getChessMove returns null!
-            System.out.println(command.getChessMove());
-
-
+            game = gameService.fetchGameData(gameID);
         } catch (DataAccessException e) {
+            System.err.println("DataAccessException fetching game data: " + e.getMessage());
             ErrorMessage errorMessage = new ErrorMessage("No game data found");
             broadcastError(session, errorMessage);
+            return;
+        } catch (Exception e) {
+            System.err.println("Unexpected exception fetching game data:");
+            e.printStackTrace(); // Print the full stack trace
+            ErrorMessage errorMessage = new ErrorMessage("Internal server error fetching game.");
+            broadcastError(session, errorMessage);
+            return;
         }
+
+        System.out.println("GameData fetched successfully: " + game);
+
+        AuthData authData = userService.fetchAuthData(auth);
+
+        ChessMove theMove = command.getChessMove();
+        System.out.println("ChessMove from command: " + theMove);
     }
     private void leave () {
 
