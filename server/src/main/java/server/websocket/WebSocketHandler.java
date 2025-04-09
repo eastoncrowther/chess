@@ -155,18 +155,26 @@ public class WebSocketHandler {
         GameData gameData = context.gameData();
         ChessGame game = gameData.game();
         String userName = authData.username();
-
         ChessGame.TeamColor playerColor = getTeamColor(gameData, userName);
 
         if (playerColor == null) {
             broadcastError(session, new ErrorMessage("Failed to resign: Observers cannot resign."));
             return;
         }
+
         if (game.isGameEnded()) {
             broadcastError(session, new ErrorMessage("Failed to resign. The game is already over."));
             return;
         }
+
+        String opponentName = switch (playerColor) {
+            case WHITE -> gameData.blackUsername();
+            case BLACK -> gameData.whiteUsername();
+        };
+
         game.setGameEnded(true);
+        gameService.updateGame(gameData);
+        broadcast(session, new NotificationMessage(opponentName + " wins! " + userName + " resigned."), true);
     }
     private ChessGame.TeamColor getTeamColor (GameData gameData, String userName) {
         if (Objects.equals(gameData.blackUsername(), userName)) {

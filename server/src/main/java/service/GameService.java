@@ -92,9 +92,13 @@ public class GameService {
     public GameData fetchGameData (int gameID) throws DataAccessException {
         return gameDAO.getGame(gameID);
     }
-
-
-
+    public void updateGame (GameData game) {
+        try {
+            gameDAO.updateGame(game);
+        } catch (DataAccessException e) {
+            throw new BadRequestException(e.getMessage());
+        }
+    }
     public void clear() {
         gameDAO.clear();
         authDAO.clear();
