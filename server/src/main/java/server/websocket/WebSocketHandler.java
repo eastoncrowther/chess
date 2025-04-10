@@ -114,13 +114,16 @@ public class WebSocketHandler {
         String userName = authData.username();
         ChessMove move = command.getChessMove();
 
-        // if participant role is observer, they shouldn't be able to make moves
         ChessGame.TeamColor teamColor = getTeamColor(gameData, userName);
         if (teamColor == null) {
             broadcastError(session, new ErrorMessage("Failed to make move: observer cannot make move."));
             return;
         }
-        // if it isn't the player's turn
+
+        if (game.isGameEnded()) {
+            broadcastError(session, new ErrorMessage("Failed to make move: the game has already ended."));
+        }
+
         if (teamColor != game.getTeamTurn()) {
             broadcastError(session, new ErrorMessage("Failed to make move: move out of turn."));
             return;
@@ -128,11 +131,44 @@ public class WebSocketHandler {
 
         try {
             game.makeMove(move);
-            System.out.println(userName + " made move: " + move);
+            System.out.printf("%s (%s) made move: %s%n", userName, teamColor, move);
+
+            gameService.updateGame(gameData);
+
+            endGameCheck(session, gameData, teamColor, userName, move);
+
+            LoadGameMessage loadGameMessage = new LoadGameMessage(game);
+            broadcast(session, loadGameMessage, true);
+
         } catch (InvalidMoveException e) {
             broadcastError(session, new ErrorMessage("Failed to make move: invalid move"));
         }
     }
+
+    private void endGameCheck (Session session, GameData gameData,
+                               ChessGame.TeamColor lastPlayerColor,
+                               String userName, ChessMove move) throws IOException {
+
+        ChessGame.TeamColor opponentColor = switch (lastPlayerColor) {
+                case BLACK -> ChessGame.TeamColor.WHITE;
+                case WHITE -> ChessGame.TeamColor.BLACK;
+        };
+        String message;
+        if (gameData.game().isInCheckmate(opponentColor)) {
+            message = String.format("Checkmate! %s wins!", userName);
+            gameData.game().setGameEnded(true);
+        } else if (gameData.game().isInStalemate(opponentColor)) {
+            message = "Stalemate!";
+            gameData.game().setGameEnded(true);
+        } else if (gameData.game().isInCheck(opponentColor)) {
+            message = opponentColor + " is in check.";
+        } else {
+            message = String.format("%s made move: %s", userName, move);
+        }
+        broadcast(session, new NotificationMessage(message), true);
+        gameService.updateGame(gameData);
+    }
+
 
     private void leave (Session session, Leave command) throws IOException {
         System.out.println("Processing LEAVE for session " + session.hashCode() + " game " + command.getGameID());
@@ -252,8 +288,4 @@ public class WebSocketHandler {
 
         return new ValidationContext(authData, gameData);
     }
-
-
-
-
 }
