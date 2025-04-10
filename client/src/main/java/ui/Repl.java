@@ -7,11 +7,13 @@ import static ui.EscapeSequences.*;
 public class Repl {
     private final PreLoginClient preLoginClient;
     private final PostLoginClient postLoginClient;
+    private final InGameClient inGameClient;
     private State state;
 
     public Repl(String serverUrl, State state) {
         preLoginClient = new PreLoginClient(serverUrl);
         postLoginClient = new PostLoginClient(serverUrl, null);
+        inGameClient = new InGameClient(serverUrl, null);
         this.state = state;
     }
 
@@ -28,11 +30,13 @@ public class Repl {
                 case LOGGEDIN -> System.out.print(SET_TEXT_COLOR_RED + "[logged in] > " + RESET_TEXT_COLOR);
                 case INCHESSGAME -> System.out.print(SET_TEXT_COLOR_YELLOW + "[in game] > " + RESET_TEXT_COLOR);
             }
-
             String line = scanner.nextLine();
             try {
                 if (state.equals(State.INCHESSGAME)) {
-                    System.out.println("IN CHESS GAME REPL");
+                    inGameClient.setState(state);
+                    inGameClient.setAuth(postLoginClient.getAuth());
+                    result = inGameClient.eval(line);
+                    state = postLoginClient.getState();
                 }
                 else if (state.equals(State.LOGGEDIN)) {
 
@@ -47,7 +51,6 @@ public class Repl {
                     state = preLoginClient.getState();
                 }
                 System.out.print(result);
-
             } catch (Throwable e) {
                 String message = e.toString();
                 System.out.print(message);

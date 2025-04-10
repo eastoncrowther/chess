@@ -113,6 +113,7 @@ public class PostLoginClient {
         if (!gameIndexToID.containsKey(gameIndex)) {
             return "Invalid game index. Please check game list\n";
         }
+        setState(State.INCHESSGAME);
         int gameID = gameIndexToID.get(gameIndex);
         return joinByID(gameID, teamColor);
     }
@@ -120,12 +121,14 @@ public class PostLoginClient {
         try {
             server.join(new JoinRequest(teamColor, gameID), authToken);
 
-            return "Game successfully joined\n" + printBoard(teamColor);
+            return "Game successfully joined\n";
         } catch (Exception e) {
             return "Failed to join game. Try again\n";
         }
     }
     public String observe(int gameID) {
+        // need to improve this function
+        setState(State.INCHESSGAME);
         return "observing game: " + gameID + "\n" + printBoard("WHITE");
     }
 
@@ -161,5 +164,8 @@ public class PostLoginClient {
     }
     public void setAuth (String authToken) {
         this.authToken = authToken;
+    }
+    public String getAuth () {
+        return this.authToken;
     }
 }
