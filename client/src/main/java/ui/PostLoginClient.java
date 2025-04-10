@@ -4,7 +4,13 @@ import chess.ChessBoard;
 import model.GameData;
 import requestresult.*;
 import server.ServerFacade;
+import server.websocket.NotificationHandler;
+import server.websocket.WebSocketFacade;
+import websocket.messages.ErrorMessage;
+import websocket.messages.LoadGameMessage;
+import websocket.messages.NotificationMessage;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,10 +21,12 @@ public class PostLoginClient {
 
     private State state = State.LOGGEDIN;
     private final ServerFacade server;
+    private final WebSocketFacade ws;
     private String authToken;
 
-    public PostLoginClient (String serverUrl, String authToken) {
+    public PostLoginClient (String serverUrl, String authToken, NotificationHandler notificationHandler) throws Exception {
         this.server = new ServerFacade(serverUrl);
+        this.ws = new WebSocketFacade(serverUrl, notificationHandler);
         this.authToken = authToken;
     }
 
@@ -120,16 +128,20 @@ public class PostLoginClient {
     public String joinByID(int gameID, String teamColor) {
         try {
             server.join(new JoinRequest(teamColor, gameID), authToken);
-
+            ws.connect(authToken, gameID);
             return "Game successfully joined\n";
         } catch (Exception e) {
             return "Failed to join game. Try again\n";
         }
     }
     public String observe(int gameID) {
-        // need to improve this function
         setState(State.INCHESSGAME);
-        return "observing game: " + gameID + "\n" + printBoard("WHITE");
+        try {
+            ws.connect(authToken, gameID);
+            return "Game successfully joined\n";
+        } catch (IOException e) {
+            return "Failed to join game. Try again\n";
+        }
     }
 
     private String printBoard (String teamColor) {

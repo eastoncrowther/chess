@@ -4,10 +4,7 @@ import chess.ChessMove;
 import chess.ChessPiece;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import websocket.commands.Connect;
-import websocket.commands.Leave;
-import websocket.commands.MakeMove;
-import websocket.commands.Resign;
+import websocket.commands.*;
 import websocket.messages.*;
 
 import javax.websocket.*;
@@ -21,6 +18,9 @@ public class WebSocketFacade extends Endpoint {
     Session session;
     NotificationHandler notificationHandler;
     private final Gson gson;
+
+    private String authToken;
+    private Integer gameID;
 
     public WebSocketFacade (String url, NotificationHandler notificationHandler) throws Exception {
         gson = new GsonBuilder()
@@ -56,24 +56,97 @@ public class WebSocketFacade extends Endpoint {
     @Override
     public void onOpen(Session session, EndpointConfig endpointConfig) {}
 
-    public void connect (String authToken, Integer gameID) throws IOException {
-        Connect connect = new Connect(authToken, gameID);
-        String command = new Gson().toJson(connect);
-        this.session.getBasicRemote().sendText(command);
+    private void sendCommand(UserGameCommand command) throws Exception {
+        if (session == null || !session.isOpen()) {
+            throw new Exception("WebSocket session is not active.");
+        }
+        try {
+            String jsonCommand = this.gson.toJson(command);
+            this.session.getBasicRemote().sendText(jsonCommand);
+        } catch (IOException e) {
+            throw new Exception("Failed to send WebSocket command: " + e.getMessage(), e);
+        }
     }
-    public void leave (String authToken, Integer gameID) throws IOException {
-        Leave leave = new Leave(authToken, gameID);
-        String command = new Gson().toJson(leave);
-        this.session.getBasicRemote().sendText(command);
+
+    private void assertReady() throws Exception {
+        if (this.session == null || !this.session.isOpen()) {
+            throw new Exception("Not connected to WebSocket server.");
+        }
+        if (this.authToken == null || this.gameID == null) {
+            throw new Exception("Credentials not set. Call connect(authToken, gameID) first.");
+        }
     }
-    public void makeMove (String authToken, Integer gameID, ChessMove move, ChessPiece promotionPiece) throws IOException {
-        MakeMove makeMove = new MakeMove(authToken, gameID, move, promotionPiece);
-        String command = new Gson().toJson(makeMove);
-        this.session.getBasicRemote().sendText(command);
+
+    public void connect(String authToken, Integer gameID) throws Exception {
+        if (authToken == null || gameID == null) {
+            throw new IllegalArgumentException("AuthToken and GameID cannot be null for connect.");
+        }
+        this.authToken = authToken;
+        this.gameID = gameID;
+
+        try {
+            Connect connectCommand = new Connect(this.authToken, this.gameID);
+            sendCommand(connectCommand);
+            // Success is indicated by receiving messages (e.g., LOAD_GAME or ERROR)
+            // via the NotificationHandler.
+        } catch (Exception e) {
+            // If sending the command fails, clear the stored credentials
+            this.authToken = null;
+            this.gameID = null;
+            throw e; // Re-throw the exception
+        }
     }
-    public void resign (String authToken, Integer gameID) throws IOException {
-        Resign resign = new Resign(authToken, gameID);
-        String command = new Gson().toJson(resign);
-        this.session.getBasicRemote().sendText(command);
+
+    public void leave() throws Exception {
+        assertReady(); // Ensure we have authToken and gameID
+        Leave leaveCommand = new Leave(this.authToken, this.gameID);
+        sendCommand(leaveCommand);
+    }
+
+    public void makeMove(ChessMove move, ChessPiece promotionPiece) throws Exception {
+        assertReady(); // Ensure we have authToken and gameID
+        if (move == null) {
+            throw new IllegalArgumentException("Move cannot be null.");
+        }
+        MakeMove makeMoveCommand = new MakeMove(this.authToken, this.gameID, move, promotionPiece);
+        sendCommand(makeMoveCommand);
+    }
+
+    public void resign() throws Exception {
+        assertReady(); // Ensure we have authToken and gameID
+        Resign resignCommand = new Resign(this.authToken, this.gameID);
+        sendCommand(resignCommand);
+    }
+
+    public void close() throws Exception {
+        if (this.session != null && this.session.isOpen()) {
+            try {
+                this.session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "Client requested disconnect"));
+            } catch (IOException e) {
+                throw new Exception("Failed to close WebSocket session cleanly: " + e.getMessage(), e);
+            } finally {
+                // Ensure state is cleared even if close throws an error
+                this.session = null;
+                this.authToken = null;
+                this.gameID = null;
+            }
+        } else {
+            // If already closed or null, clear state just in case
+            this.session = null;
+            this.authToken = null;
+            this.gameID = null;
+        }
+    }
+    
+    public boolean isOpen() {
+        return this.session != null && this.session.isOpen();
+    }
+
+    public String getCurrentAuthToken() {
+        return this.authToken;
+    }
+
+    public Integer getCurrentGameID() {
+        return this.gameID;
     }
 }
