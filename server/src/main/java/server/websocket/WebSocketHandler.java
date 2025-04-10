@@ -100,6 +100,7 @@ public class WebSocketHandler {
 
         System.out.println("Session " + session.hashCode() + " connected successfully.");
     }
+
     private void makeMove (Session session, MakeMove command) throws IOException {
         System.out.println("Processing MAKE_MOVE for session " + session.hashCode() + " game " + command.getGameID());
         int gameID = command.getGameID();
@@ -124,50 +125,63 @@ public class WebSocketHandler {
             return;
         }
         if (game.getTeamTurn() != playerColor) {
-            broadcastError(session, new ErrorMessage("Failed to make move " + game.getTeamTurn() + " turn."));
+            broadcastError(session, new ErrorMessage("Failed to make move: it is " + game.getTeamTurn() + "'s turn."));
             return;
         }
 
         try {
             game.makeMove(move);
-            System.out.printf("%s (%s) made move (in memory): %s%n", userName, playerColor, move);
-            String notificationText = null;
+
+            boolean endedByCheckmate = false;
+            boolean endedByStalemate = false;
+            boolean resultedInCheck = false;
+            String gameEndNotificationText = null;
+            String checkNotificationText = null;
             ChessGame.TeamColor opponentColor = getOpponentColor(playerColor);
+
             if (game.isInCheckmate(opponentColor)) {
-                notificationText = String.format("Checkmate! %s (%s) wins!", userName, playerColor);
+                endedByCheckmate = true;
+                gameEndNotificationText = String.format("Checkmate! %s (%s) wins!", userName, playerColor);
                 game.setGameEnded(true);
             } else if (game.isInStalemate(opponentColor)) {
-                notificationText = "Stalemate! The game is a draw.";
+                endedByStalemate = true;
+                gameEndNotificationText = "Stalemate! The game is a draw.";
                 game.setGameEnded(true);
+            } else if (game.isInCheck(opponentColor)) {
+                resultedInCheck = true;
+                checkNotificationText = String.format("%s (%s) put %s in check.", userName, playerColor, opponentColor);
             }
-            else if (game.isInCheck(opponentColor)) {
-                notificationText = String.format("%s (%s) put %s in check.", userName, playerColor, opponentColor);
-            }
+
             GameData updatedGameData = new GameData(gameData.gameID(),
                     gameData.whiteUsername(), gameData.blackUsername(), gameData.gameName(), game);
 
             gameService.updateGame(authData.authToken(), updatedGameData);
 
-            LoadGameMessage loadGameMessage = new LoadGameMessage(gameData.game());
+
+            LoadGameMessage loadGameMessage = new LoadGameMessage(game);
             broadcast(gameID, session, loadGameMessage, true);
 
-            if (notificationText != null) {
-                NotificationMessage notification = new NotificationMessage(notificationText);
-                broadcast(gameID, session, notification, true);
-            } else {
-                String moveNotificationText = String.format("%s (%s) made move: %s", userName, playerColor, move);
-                NotificationMessage moveNotification = new NotificationMessage(moveNotificationText);
-                broadcast(gameID, session, moveNotification, false);
+            String moveNotificationText = String.format("%s (%s) made move: %s", userName, playerColor, move);
+            NotificationMessage moveNotification = new NotificationMessage(moveNotificationText);
+            broadcast(gameID, session, moveNotification, false);
+
+            if (endedByCheckmate || endedByStalemate) {
+                NotificationMessage endNotification = new NotificationMessage(gameEndNotificationText);
+                broadcast(gameID, session, endNotification, true);
+            } else if (resultedInCheck) {
+                NotificationMessage checkNotify = new NotificationMessage(checkNotificationText);
+                broadcast(gameID, session, checkNotify, true);
             }
 
         } catch (InvalidMoveException e) {
-            System.err.println("Invalid move attempted by " + userName + ": " + e.getMessage());
             broadcastError(session, new ErrorMessage("Error: Invalid move. " + e.getMessage()));
         } catch (DataAccessException e) {
-            broadcastError(session, new ErrorMessage("Error: Unauthorized. "));
+            broadcastError(session, new ErrorMessage("Error: Failed to save game state. " + e.getMessage()));
+        }
+        catch (Exception e) {
+            broadcastError(session, new ErrorMessage("Error: An unexpected server error occurred while processing the move."));
         }
     }
-
 
     private void leave (Session session, Leave command) throws IOException {
         System.out.println("Processing LEAVE for session " + session.hashCode() + " game " + command.getGameID());
