@@ -20,7 +20,7 @@ public class Server {
     UserService userService;
     GameService gameService;
 
-    ConcurrentHashMap<Session, Connect> gameSessions;
+    ConcurrentHashMap<Session, Integer> gameSessions;
 
     public Server () {
         try {

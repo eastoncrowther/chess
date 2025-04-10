@@ -30,13 +30,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public class WebSocketHandler {
     GameService gameService;
     UserService userService;
-    ConcurrentHashMap<Session, Connect> gameSessions;
+    ConcurrentHashMap<Session, Integer> gameSessions;
     private final Gson gson;
     private record ValidationContext(AuthData authData, GameData gameData) {}
 
     public WebSocketHandler (GameService gameService,
                              UserService userService,
-                             ConcurrentHashMap<Session, Connect> gameSessions) {
+                             ConcurrentHashMap<Session, Integer> gameSessions) {
         this.gameService = gameService;
         this.userService = userService;
         this.gameSessions = gameSessions;
@@ -80,7 +80,7 @@ public class WebSocketHandler {
         }
 
         String userName = authData.username();
-        gameSessions.put(session, command);
+        gameSessions.put(session, command.getGameID());
 
         ChessGame.TeamColor playerColor = getTeamColor(gameData, userName);
         String roleDescription;
@@ -93,7 +93,7 @@ public class WebSocketHandler {
         }
 
         var notification = new NotificationMessage(String.format("%s joined the game %s.", userName, roleDescription));
-        broadcast(session, notification, false);
+        broadcast(gameData.gameID(), session, notification, false);
 
         var loadGameMsg = new LoadGameMessage(gameData.game());
         session.getRemote().sendString(gson.toJson(loadGameMsg));
@@ -111,6 +111,7 @@ public class WebSocketHandler {
         AuthData authData = context.authData();
         GameData gameData = context.gameData();
         ChessGame game = gameData.game();
+        int gameID = gameData.gameID();
         String userName = authData.username();
         ChessMove move = command.getChessMove();
 
@@ -138,7 +139,7 @@ public class WebSocketHandler {
             endGameCheck(session, gameData, teamColor, userName, move);
 
             LoadGameMessage loadGameMessage = new LoadGameMessage(game);
-            broadcast(session, loadGameMessage, true);
+            broadcast(gameID, session, loadGameMessage, true);
 
         } catch (InvalidMoveException e) {
             broadcastError(session, new ErrorMessage("Failed to make move: invalid move"));
@@ -165,7 +166,7 @@ public class WebSocketHandler {
         } else {
             message = String.format("%s made move: %s", userName, move);
         }
-        broadcast(session, new NotificationMessage(message), true);
+        broadcast(gameData.gameID(), session, new NotificationMessage(message), true);
         gameService.updateGame(gameData);
     }
 
@@ -178,7 +179,7 @@ public class WebSocketHandler {
             return;
         }
         String userName = context.authData.username();
-        broadcast(session, new NotificationMessage(userName + " left the game."), false);
+        broadcast(command.getGameID(), session, new NotificationMessage(userName + " left the game."), false);
     }
     private void resign (Session session, Resign command) throws IOException {
         System.out.println("Processing RESIGN for session " + session.hashCode() + " game " + command.getGameID());
@@ -210,7 +211,9 @@ public class WebSocketHandler {
 
         game.setGameEnded(true);
         gameService.updateGame(gameData);
-        broadcast(session, new NotificationMessage(opponentName + " wins! " + userName + " resigned."), true);
+        broadcast(gameData.gameID(), session,
+                new NotificationMessage(opponentName + " wins! " + userName + " resigned."),
+                true);
     }
     private ChessGame.TeamColor getTeamColor (GameData gameData, String userName) {
         if (Objects.equals(gameData.blackUsername(), userName)) {
@@ -221,34 +224,43 @@ public class WebSocketHandler {
         return null;
     }
 
-    public void broadcast(Session sender, ServerMessage message, boolean includeSender) throws IOException {
-        System.out.println("In broadcast...");
 
+
+    public void broadcast(int targetGameID, Session senderSession, ServerMessage message, boolean includeSender) {
+        String messageJson = gson.toJson(message);
         var removeList = new ArrayList<Session>();
-        Connect senderConnect = gameSessions.get(sender);
 
-        for (Session session : gameSessions.keySet()) {
-            Connect connect = gameSessions.get(session);
+        System.out.println("Broadcasting [" + message.getServerMessageType() + "] to game " + targetGameID);
 
-            boolean sameGame = senderConnect != null
-                    && connect != null
-                    && Objects.equals(senderConnect.getGameID(), connect.getGameID());
-            boolean isSender = session == sender;
+        // Iterate through the map entries
+        for (ConcurrentHashMap.Entry<Session, Integer> entry : gameSessions.entrySet()) { // Level 1
+            Session currentSession = entry.getKey();
+            Integer sessionGameID = entry.getValue();
 
-            if (session.isOpen()) {
-                if ((includeSender || !isSender) && sameGame) {
-                    session.getRemote().sendString(message.toJson());
-                    System.out.println("Sent message to session: " + session);
-                }
-            } else {
-                removeList.add(session);
+            if (!currentSession.isOpen() || sessionGameID == null) {
+                removeList.add(currentSession);
+                continue;
+            }
+
+            if (sessionGameID != targetGameID) {
+                continue;
+            }
+
+            boolean isSender = (currentSession.equals(senderSession));
+            if (isSender && !includeSender) {
+                continue;
+            }
+
+            try {
+
+                currentSession.getRemote().sendString(messageJson);
+            } catch (IOException | IllegalStateException e) {
+                removeList.add(currentSession);
             }
         }
 
-        // Remove disconnected sessions
-        for (Session session : removeList) {
-            gameSessions.remove(session);
-            System.out.println("Removed closed session: " + session);
+        for (Session sessionToRemove : removeList) {
+            gameSessions.remove(sessionToRemove);
         }
     }
 
