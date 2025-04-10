@@ -19,7 +19,6 @@ public class ChessGame {
     public ChessGame() {
         chessBoard.resetBoard();
         this.team = TeamColor.WHITE;
-        gameEnded = false;
     }
 
     /**

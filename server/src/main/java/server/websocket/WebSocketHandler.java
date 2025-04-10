@@ -109,12 +109,12 @@ public class WebSocketHandler {
             return;
         }
         AuthData authData = context.authData();
-        GameData initialGameData = context.gameData();
-        ChessGame game = initialGameData.game();
+        GameData gameData = context.gameData();
+        ChessGame game = gameData.game();
         String userName = authData.username();
         ChessMove move = command.getChessMove();
 
-        ChessGame.TeamColor playerColor = getTeamColor(initialGameData, userName);
+        ChessGame.TeamColor playerColor = getTeamColor(gameData, userName);
         if (game.isGameEnded()) {
             broadcastError(session, new ErrorMessage("Failed to make move: the game has already ended."));
             return;
@@ -131,30 +131,24 @@ public class WebSocketHandler {
         try {
             game.makeMove(move);
             System.out.printf("%s (%s) made move (in memory): %s%n", userName, playerColor, move);
-
             String notificationText = null;
-
-
             ChessGame.TeamColor opponentColor = getOpponentColor(playerColor);
-
             if (game.isInCheckmate(opponentColor)) {
                 notificationText = String.format("Checkmate! %s (%s) wins!", userName, playerColor);
-                if (!game.isGameEnded()) {
-                    game.setGameEnded(true);
-                }
+                game.setGameEnded(true);
             } else if (game.isInStalemate(opponentColor)) {
                 notificationText = "Stalemate! The game is a draw.";
-                if (!game.isGameEnded()) {
-                    game.setGameEnded(true);
-                }
+                game.setGameEnded(true);
             }
             else if (game.isInCheck(opponentColor)) {
                 notificationText = String.format("%s (%s) put %s in check.", userName, playerColor, opponentColor);
             }
+            GameData updatedGameData = new GameData(gameData.gameID(),
+                    gameData.whiteUsername(), gameData.blackUsername(), gameData.gameName(), game);
 
-            gameService.updateGame(initialGameData);
+            gameService.updateGame(authData.authToken(), updatedGameData);
 
-            LoadGameMessage loadGameMessage = new LoadGameMessage(game);
+            LoadGameMessage loadGameMessage = new LoadGameMessage(gameData.game());
             broadcast(gameID, session, loadGameMessage, true);
 
             if (notificationText != null) {
@@ -169,6 +163,8 @@ public class WebSocketHandler {
         } catch (InvalidMoveException e) {
             System.err.println("Invalid move attempted by " + userName + ": " + e.getMessage());
             broadcastError(session, new ErrorMessage("Error: Invalid move. " + e.getMessage()));
+        } catch (DataAccessException e) {
+            broadcastError(session, new ErrorMessage("Error: Unauthorized. "));
         }
     }
 
@@ -235,7 +231,11 @@ public class WebSocketHandler {
         };
 
         game.setGameEnded(true);
-        gameService.updateGame(gameData);
+        try {
+            gameService.updateGame(authData.authToken(), gameData);
+        } catch (DataAccessException e) {
+            broadcastError(session, new ErrorMessage("Error: Unauthorized. "));
+        }
         broadcast(gameData.gameID(), session,
                 new NotificationMessage(opponentName + " wins! " + userName + " resigned."),
                 true);
@@ -269,16 +269,13 @@ public class WebSocketHandler {
                 removeList.add(currentSession);
                 continue;
             }
-
             if (sessionGameID != targetGameID) {
                 continue;
             }
-
             boolean isSender = (currentSession.equals(senderSession));
             if (isSender && !includeSender) {
                 continue;
             }
-
             try {
 
                 currentSession.getRemote().sendString(messageJson);
@@ -286,7 +283,6 @@ public class WebSocketHandler {
                 removeList.add(currentSession);
             }
         }
-
         for (Session sessionToRemove : removeList) {
             gameSessions.remove(sessionToRemove);
         }

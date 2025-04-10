@@ -92,12 +92,9 @@ public class GameService {
     public GameData fetchGameData (int gameID) throws DataAccessException {
         return gameDAO.getGame(gameID);
     }
-    public void updateGame (GameData game) {
-        try {
-            gameDAO.updateGame(game);
-        } catch (DataAccessException e) {
-            throw new BadRequestException(e.getMessage());
-        }
+    public void updateGame (String authToken, GameData game) throws DataAccessException {
+        authDAO.getAuth(authToken);
+        gameDAO.updateGame(game);
     }
     public void removePlayer (String authToken, int gameID, ChessGame.TeamColor teamColor)
                                 throws UnauthorizedException, DataAccessException {
@@ -110,12 +107,12 @@ public class GameService {
         currentGame = gameDAO.getGame(gameID);
         if (teamColor == ChessGame.TeamColor.WHITE) {
             if (currentGame.whiteUsername()!= null && currentGame.whiteUsername().equals(userName)) {
-                updateGame(new GameData(gameID, null, currentGame.blackUsername(),
+                updateGame(authToken, new GameData(gameID, null, currentGame.blackUsername(),
                         currentGame.gameName(), currentGame.game()));
             }
         } else if (teamColor == ChessGame.TeamColor.BLACK) {
             if (currentGame.blackUsername()!= null && currentGame.blackUsername().equals(userName)) {
-                updateGame(new GameData(gameID, currentGame.whiteUsername(), null,
+                updateGame(authToken, new GameData(gameID, currentGame.whiteUsername(), null,
                         currentGame.gameName(), currentGame.game()));
             }
         }
