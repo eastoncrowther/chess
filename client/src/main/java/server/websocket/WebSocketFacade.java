@@ -1,7 +1,13 @@
 package server.websocket;
 
+import chess.ChessMove;
+import chess.ChessPiece;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import websocket.commands.Connect;
+import websocket.commands.Leave;
+import websocket.commands.MakeMove;
+import websocket.commands.Resign;
 import websocket.messages.*;
 
 import javax.websocket.*;
@@ -50,8 +56,24 @@ public class WebSocketFacade extends Endpoint {
     @Override
     public void onOpen(Session session, EndpointConfig endpointConfig) {}
 
-
-
-
-
+    public void connect (String authToken, Integer gameID) throws IOException {
+        Connect connect = new Connect(authToken, gameID);
+        String command = new Gson().toJson(connect);
+        this.session.getBasicRemote().sendText(command);
+    }
+    public void leave (String authToken, Integer gameID) throws IOException {
+        Leave leave = new Leave(authToken, gameID);
+        String command = new Gson().toJson(leave);
+        this.session.getBasicRemote().sendText(command);
+    }
+    public void makeMove (String authToken, Integer gameID, ChessMove move, ChessPiece promotionPiece) throws IOException {
+        MakeMove makeMove = new MakeMove(authToken, gameID, move, promotionPiece);
+        String command = new Gson().toJson(makeMove);
+        this.session.getBasicRemote().sendText(command);
+    }
+    public void resign (String authToken, Integer gameID) throws IOException {
+        Resign resign = new Resign(authToken, gameID);
+        String command = new Gson().toJson(resign);
+        this.session.getBasicRemote().sendText(command);
+    }
 }
