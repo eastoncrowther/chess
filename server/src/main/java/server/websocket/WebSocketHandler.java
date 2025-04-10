@@ -101,73 +101,75 @@ public class WebSocketHandler {
         System.out.println("Session " + session.hashCode() + " connected successfully.");
     }
     private void makeMove (Session session, MakeMove command) throws IOException {
-
-        System.out.println("In makeMove function...");
+        System.out.println("Processing MAKE_MOVE for session " + session.hashCode() + " game " + command.getGameID());
+        int gameID = command.getGameID();
 
         ValidationContext context = fetchAndValidateAuthAndGame(session, command);
         if (context == null) {
             return;
         }
         AuthData authData = context.authData();
-        GameData gameData = context.gameData();
-        ChessGame game = gameData.game();
-        int gameID = gameData.gameID();
+        GameData initialGameData = context.gameData();
+        ChessGame game = initialGameData.game();
         String userName = authData.username();
         ChessMove move = command.getChessMove();
 
-        ChessGame.TeamColor teamColor = getTeamColor(gameData, userName);
-        if (teamColor == null) {
+        ChessGame.TeamColor playerColor = getTeamColor(initialGameData, userName);
+        if (game.isGameEnded()) {
+            broadcastError(session, new ErrorMessage("Failed to make move: the game has already ended."));
+            return;
+        }
+        if (playerColor == null) {
             broadcastError(session, new ErrorMessage("Failed to make move: observer cannot make move."));
             return;
         }
-
-        if (game.isGameEnded()) {
-            broadcastError(session, new ErrorMessage("Failed to make move: the game has already ended."));
-        }
-
-        if (teamColor != game.getTeamTurn()) {
-            broadcastError(session, new ErrorMessage("Failed to make move: move out of turn."));
+        if (game.getTeamTurn() != playerColor) {
+            broadcastError(session, new ErrorMessage("Failed to make move " + game.getTeamTurn() + " turn."));
             return;
         }
 
         try {
             game.makeMove(move);
-            System.out.printf("%s (%s) made move: %s%n", userName, teamColor, move);
+            System.out.printf("%s (%s) made move (in memory): %s%n", userName, playerColor, move);
 
-            gameService.updateGame(gameData);
+            String notificationText = null;
 
-            endGameCheck(session, gameData, teamColor, userName, move);
+
+            ChessGame.TeamColor opponentColor = getOpponentColor(playerColor);
+
+            if (game.isInCheckmate(opponentColor)) {
+                notificationText = String.format("Checkmate! %s (%s) wins!", userName, playerColor);
+                if (!game.isGameEnded()) {
+                    game.setGameEnded(true);
+                }
+            } else if (game.isInStalemate(opponentColor)) {
+                notificationText = "Stalemate! The game is a draw.";
+                if (!game.isGameEnded()) {
+                    game.setGameEnded(true);
+                }
+            }
+            else if (game.isInCheck(opponentColor)) {
+                notificationText = String.format("%s (%s) put %s in check.", userName, playerColor, opponentColor);
+            }
+
+            gameService.updateGame(initialGameData);
 
             LoadGameMessage loadGameMessage = new LoadGameMessage(game);
             broadcast(gameID, session, loadGameMessage, true);
 
+            if (notificationText != null) {
+                NotificationMessage notification = new NotificationMessage(notificationText);
+                broadcast(gameID, session, notification, true);
+            } else {
+                String moveNotificationText = String.format("%s (%s) made move: %s", userName, playerColor, move);
+                NotificationMessage moveNotification = new NotificationMessage(moveNotificationText);
+                broadcast(gameID, session, moveNotification, false);
+            }
+
         } catch (InvalidMoveException e) {
-            broadcastError(session, new ErrorMessage("Failed to make move: invalid move"));
+            System.err.println("Invalid move attempted by " + userName + ": " + e.getMessage());
+            broadcastError(session, new ErrorMessage("Error: Invalid move. " + e.getMessage()));
         }
-    }
-
-    private void endGameCheck (Session session, GameData gameData,
-                               ChessGame.TeamColor lastPlayerColor,
-                               String userName, ChessMove move) throws IOException {
-
-        ChessGame.TeamColor opponentColor = switch (lastPlayerColor) {
-                case BLACK -> ChessGame.TeamColor.WHITE;
-                case WHITE -> ChessGame.TeamColor.BLACK;
-        };
-        String message;
-        if (gameData.game().isInCheckmate(opponentColor)) {
-            message = String.format("Checkmate! %s wins!", userName);
-            gameData.game().setGameEnded(true);
-        } else if (gameData.game().isInStalemate(opponentColor)) {
-            message = "Stalemate!";
-            gameData.game().setGameEnded(true);
-        } else if (gameData.game().isInCheck(opponentColor)) {
-            message = opponentColor + " is in check.";
-        } else {
-            message = String.format("%s made move: %s", userName, move);
-        }
-        broadcast(gameData.gameID(), session, new NotificationMessage(message), true);
-        gameService.updateGame(gameData);
     }
 
 
@@ -223,8 +225,12 @@ public class WebSocketHandler {
         }
         return null;
     }
-
-
+    private ChessGame.TeamColor getOpponentColor (ChessGame.TeamColor teamColor) {
+        return switch (teamColor) {
+            case BLACK -> ChessGame.TeamColor.WHITE;
+            case WHITE -> ChessGame.TeamColor.BLACK;
+        };
+    }
 
     public void broadcast(int targetGameID, Session senderSession, ServerMessage message, boolean includeSender) {
         String messageJson = gson.toJson(message);
@@ -232,7 +238,6 @@ public class WebSocketHandler {
 
         System.out.println("Broadcasting [" + message.getServerMessageType() + "] to game " + targetGameID);
 
-        // Iterate through the map entries
         for (ConcurrentHashMap.Entry<Session, Integer> entry : gameSessions.entrySet()) { // Level 1
             Session currentSession = entry.getKey();
             Integer sessionGameID = entry.getValue();
