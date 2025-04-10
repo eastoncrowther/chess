@@ -7,7 +7,7 @@ import java.util.Objects;
 import static ui.EscapeSequences.*;
 
 public class PrintBoard {
-    private final ChessBoard chessBoard;
+    private ChessBoard chessBoard;
 
     public PrintBoard(ChessBoard chessBoard) {
         this.chessBoard = chessBoard;
@@ -69,6 +69,9 @@ public class PrintBoard {
         } else {
             return ((row + col) % 2 == 0) ? SET_BG_COLOR_LIGHT_GREY : SET_BG_COLOR_DARK_GREY;
         }
+    }
+    void setChessBoard (ChessBoard chessBoard) {
+        this.chessBoard = chessBoard;
     }
 }
 

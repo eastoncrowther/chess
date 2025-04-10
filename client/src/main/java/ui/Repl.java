@@ -1,20 +1,28 @@
 package ui;
 
+import chess.ChessBoard;
+import server.websocket.NotificationHandler;
+import websocket.messages.ErrorMessage;
+import websocket.messages.LoadGameMessage;
+import websocket.messages.NotificationMessage;
+
 import java.util.Scanner;
 
 import static ui.EscapeSequences.*;
 
-public class Repl {
+public class Repl implements NotificationHandler {
     private final PreLoginClient preLoginClient;
     private final PostLoginClient postLoginClient;
     private final InGameClient inGameClient;
     private State state;
+    private PrintBoard printer;
 
     public Repl(String serverUrl, State state) {
         preLoginClient = new PreLoginClient(serverUrl);
         postLoginClient = new PostLoginClient(serverUrl, null);
         inGameClient = new InGameClient(serverUrl, null);
         this.state = state;
+        printer = new PrintBoard(null);
     }
 
     public void run() {
@@ -57,5 +65,22 @@ public class Repl {
             }
             System.out.println();
         }
+    }
+
+    @Override
+    public void handleError(ErrorMessage errorMessage) {
+        System.out.println(errorMessage.getErrorMessage());
+    }
+
+    @Override
+    public void handleLoadGame(LoadGameMessage loadGameMessage) {
+        ChessBoard currentBoard = loadGameMessage.getGame().getBoard();
+        printer.setChessBoard(currentBoard);
+        System.out.print(printer.printWhiteBoard());
+    }
+
+    @Override
+    public void handleNotification(NotificationMessage notificationMessage) {
+        System.out.println(notificationMessage.getMessage());
     }
 }
