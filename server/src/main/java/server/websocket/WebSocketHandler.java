@@ -3,7 +3,6 @@ package server.websocket;
 
 import chess.ChessGame;
 import chess.ChessMove;
-import chess.ChessPiece;
 import chess.InvalidMoveException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -14,6 +13,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import service.GameService;
+import service.UnauthorizedException;
 import service.UserService;
 import websocket.commands.*;
 import websocket.messages.ErrorMessage;
@@ -175,14 +175,37 @@ public class WebSocketHandler {
 
     private void leave (Session session, Leave command) throws IOException {
         System.out.println("Processing LEAVE for session " + session.hashCode() + " game " + command.getGameID());
+        int gameID = command.getGameID();
+        String authToken = command.getAuthToken();
 
         ValidationContext context = fetchAndValidateAuthAndGame(session, command);
         if (context == null) {
+            gameSessions.remove(session);
             return;
         }
-        String userName = context.authData.username();
-        broadcast(command.getGameID(), session, new NotificationMessage(userName + " left the game."), false);
+
+        AuthData authData = context.authData();
+        GameData gameData = context.gameData();
+        String userName = authData.username();
+
+        ChessGame.TeamColor playerColor = getTeamColor(gameData, userName);
+
+        try {
+            gameService.removePlayer(authToken, gameID, playerColor);
+        } catch (DataAccessException |UnauthorizedException e) {
+            broadcastError(session, new ErrorMessage("Failed to remove player from game"));
+        }
+
+        String leaveMessage;
+        if (playerColor == null) {
+            leaveMessage = String.format("Observer %s has left the game.", userName);
+        } else {
+            leaveMessage = String.format("Player %s (%s) has left the game.", userName, playerColor);
+        }
+        broadcast(gameID, session, new NotificationMessage(leaveMessage), false);
+        gameSessions.remove(session);
     }
+
     private void resign (Session session, Resign command) throws IOException {
         System.out.println("Processing RESIGN for session " + session.hashCode() + " game " + command.getGameID());
 

@@ -99,6 +99,31 @@ public class GameService {
             throw new BadRequestException(e.getMessage());
         }
     }
+    public void removePlayer (String authToken, int gameID, ChessGame.TeamColor teamColor)
+                                throws UnauthorizedException, DataAccessException {
+        AuthData authData = authDAO.getAuth(authToken);
+        if (authData == null) {
+            throw new UnauthorizedException("Invalid auth token.");
+        }
+        String userName = authData.username();
+        GameData currentGame;
+        currentGame = gameDAO.getGame(gameID);
+        if (teamColor == ChessGame.TeamColor.WHITE) {
+            if (currentGame.whiteUsername()!= null && currentGame.whiteUsername().equals(userName)) {
+                updateGame(new GameData(gameID, null, currentGame.blackUsername(),
+                        currentGame.gameName(), currentGame.game()));
+            }
+        } else if (teamColor == ChessGame.TeamColor.BLACK) {
+            if (currentGame.blackUsername()!= null && currentGame.blackUsername().equals(userName)) {
+                updateGame(new GameData(gameID, currentGame.whiteUsername(), null,
+                        currentGame.gameName(), currentGame.game()));
+            }
+        }
+    }
+
+
+
+
     public void clear() {
         gameDAO.clear();
         authDAO.clear();
