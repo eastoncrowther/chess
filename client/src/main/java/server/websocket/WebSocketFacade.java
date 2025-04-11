@@ -96,12 +96,12 @@ public class WebSocketFacade extends Endpoint {
         sendCommand(leaveCommand);
     }
 
-    public void makeMove(ChessMove move, ChessPiece promotionPiece) throws Exception {
+    public void makeMove(ChessMove move) throws Exception {
         assertReady();
         if (move == null) {
             throw new IllegalArgumentException("Move cannot be null.");
         }
-        MakeMove makeMoveCommand = new MakeMove(this.authToken, this.gameID, move, promotionPiece);
+        MakeMove makeMoveCommand = new MakeMove(this.authToken, this.gameID, move, move.getPromotionPiece());
         sendCommand(makeMoveCommand);
     }
 

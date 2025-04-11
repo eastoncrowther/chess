@@ -10,6 +10,7 @@ import websocket.messages.ErrorMessage;
 import websocket.messages.LoadGameMessage;
 import websocket.messages.NotificationMessage;
 
+import java.io.Console;
 import java.util.*;
 
 import static ui.EscapeSequences.*;
@@ -54,7 +55,7 @@ public class ChessClient implements NotificationHandler {
                 case QUIT -> "";
             };
         } catch (Exception e) {
-            return "\nAn unexpected error occurred. Please try again.\n";
+            return "\nAn error occurred. Please try again.\n";
         }
     }
 
@@ -213,7 +214,7 @@ public class ChessClient implements NotificationHandler {
         String gameName = params[0];
         try {
             CreateResult result = serverFacade.createGame(new CreateRequest(gameName), this.authToken);
-            return "\nGame '" + gameName + "' created successfully (ID: " + result.gameID() + ").\n";
+            return "\nGame '" + gameName + "' created successfully.\n";
         } catch (Exception e) {
             if (e.getMessage() != null && e.getMessage().contains("403")) {
                 return "\nError: Game name '" + gameName + "' might already exist or be invalid.\n";
@@ -232,11 +233,11 @@ public class ChessClient implements NotificationHandler {
             }
 
             StringBuilder response = new StringBuilder("\nAvailable Games:\n");
-            this.gameIndexToID.clear(); // Clear map before repopulating
+            this.gameIndexToID.clear();
             int displayIndex = 1;
 
             for (GameData game : result.games()) {
-                this.gameIndexToID.put(displayIndex, game.gameID()); // Map display index to actual ID
+                this.gameIndexToID.put(displayIndex, game.gameID());
 
                 String whitePlayer = (game.whiteUsername() == null || game.whiteUsername().isEmpty()) ? "[available]" : game.whiteUsername();
                 String blackPlayer = (game.blackUsername() == null || game.blackUsername().isEmpty()) ? "[available]" : game.blackUsername();
@@ -258,7 +259,7 @@ public class ChessClient implements NotificationHandler {
         }
     }
 
-    private String join(String[] params) throws Exception {
+    private String join(String[] params) {
         if (params.length != 2) {
             return "Usage: join <INDEX> <COLOR (WHITE or BLACK)>\n";
         }
@@ -320,7 +321,7 @@ public class ChessClient implements NotificationHandler {
         }
     }
 
-    private String leave() throws Exception {
+    private String leave() {
         if (this.webSocketFacade == null) {
             return "\nNot currently in a game.\n"; // Safety check
         }
@@ -335,8 +336,33 @@ public class ChessClient implements NotificationHandler {
     }
 
     private String makeMove(String[] params) throws Exception {
-       return null;
+        // get the position from the command
+        ChessPosition startPos = getPosition(params[0]);
+        ChessPosition endPos = getPosition(params[1]);
+        if (startPos == null || endPos == null) {
+            return "\nMake sure move is formatted correctly <a1 a2>.\n";
+        }
+        // add a function to get the promotion piece
+        ChessMove chessMove = new ChessMove(startPos, endPos, null);
+        this.webSocketFacade.makeMove(chessMove);
+        return "\n";
     }
+    private ChessPosition getPosition(String position) {
+        if (position.length() != 2) {
+            return null;
+        }
+        char colChar = Character.toUpperCase(position.charAt(0));
+        int row = Character.getNumericValue(position.charAt(1));
+
+        if (row < 1 || row > 8 || colChar < 'A' || colChar > 'H') {
+            return null;
+        }
+
+        int col = colChar - 'A' + 1;
+
+        return new ChessPosition(row, col);
+    }
+
 
     private String resign() {
         return null;
