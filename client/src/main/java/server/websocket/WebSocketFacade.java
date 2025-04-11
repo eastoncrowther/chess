@@ -60,12 +60,8 @@ public class WebSocketFacade extends Endpoint {
         if (session == null || !session.isOpen()) {
             throw new Exception("WebSocket session is not active.");
         }
-        try {
-            String jsonCommand = this.gson.toJson(command);
-            this.session.getBasicRemote().sendText(jsonCommand);
-        } catch (IOException e) {
-            throw new Exception("Failed to send WebSocket command: " + e.getMessage(), e);
-        }
+        String jsonCommand = this.gson.toJson(command);
+        this.session.getAsyncRemote().sendText(jsonCommand);
     }
 
     private void assertReady() throws Exception {
@@ -87,24 +83,21 @@ public class WebSocketFacade extends Endpoint {
         try {
             Connect connectCommand = new Connect(this.authToken, this.gameID);
             sendCommand(connectCommand);
-            // Success is indicated by receiving messages (e.g., LOAD_GAME or ERROR)
-            // via the NotificationHandler.
         } catch (Exception e) {
-            // If sending the command fails, clear the stored credentials
             this.authToken = null;
             this.gameID = null;
-            throw e; // Re-throw the exception
+            throw e;
         }
     }
 
     public void leave() throws Exception {
-        assertReady(); // Ensure we have authToken and gameID
+        assertReady();
         Leave leaveCommand = new Leave(this.authToken, this.gameID);
         sendCommand(leaveCommand);
     }
 
     public void makeMove(ChessMove move, ChessPiece promotionPiece) throws Exception {
-        assertReady(); // Ensure we have authToken and gameID
+        assertReady();
         if (move == null) {
             throw new IllegalArgumentException("Move cannot be null.");
         }
@@ -113,7 +106,7 @@ public class WebSocketFacade extends Endpoint {
     }
 
     public void resign() throws Exception {
-        assertReady(); // Ensure we have authToken and gameID
+        assertReady();
         Resign resignCommand = new Resign(this.authToken, this.gameID);
         sendCommand(resignCommand);
     }
@@ -125,7 +118,6 @@ public class WebSocketFacade extends Endpoint {
             } catch (IOException e) {
                 throw new Exception("Failed to close WebSocket session cleanly: " + e.getMessage(), e);
             } finally {
-                // Ensure state is cleared even if close throws an error
                 this.session = null;
                 this.authToken = null;
                 this.gameID = null;

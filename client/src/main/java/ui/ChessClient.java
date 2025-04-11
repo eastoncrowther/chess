@@ -269,14 +269,6 @@ public class ChessClient implements NotificationHandler {
             return "\nInvalid game index. Please use the number shown in 'list'.\n";
         }
         String colorStr = params[1].toUpperCase();
-        ChessGame.TeamColor requestedColor;
-        if (colorStr.equals("WHITE")) {
-            requestedColor = ChessGame.TeamColor.WHITE;
-        } else if (colorStr.equals("BLACK")) {
-            requestedColor = ChessGame.TeamColor.BLACK;
-        } else {
-            return "\nInvalid color. Please specify WHITE or BLACK.\n";
-        }
 
         Integer gameID = this.gameIndexToID.get(displayIndex);
         if (gameID == null) {
