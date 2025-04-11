@@ -1,17 +1,13 @@
 package ui;
 import chess.*;
-import model.GameData; // Assuming GameData includes usernames
+import model.GameData;
 import requestresult.*;
 import server.ServerFacade;
-import server.websocket.NotificationHandler;
-import server.websocket.WebSocketFacade;
-import websocket.messages.ErrorMessage;
-import websocket.messages.LoadGameMessage;
-import websocket.messages.NotificationMessage;
+import server.websocket.*;
+import websocket.messages.*;
 import java.io.Console;
 import java.util.*;
 import static ui.EscapeSequences.*;
-
 public class ChessClient implements NotificationHandler {
     private State currentState = State.LOGGEDOUT;
     private String authToken = null;
@@ -26,7 +22,7 @@ public class ChessClient implements NotificationHandler {
     public ChessClient(String serverUrl) {
         this.serverUrl = serverUrl;
         this.serverFacade = new ServerFacade(serverUrl);
-        this.printBoard = new PrintBoard(null); // Board set later
+        this.printBoard = new PrintBoard(null);
     }
     public State getState() {
         return currentState;
@@ -36,7 +32,7 @@ public class ChessClient implements NotificationHandler {
             return "";
         }
         try {
-            String[] tokens = input.trim().toLowerCase().split("\\s+"); // Split by whitespace
+            String[] tokens = input.trim().toLowerCase().split("\\s+");
             String command = (tokens.length > 0) ? tokens[0] : "help";
             String[] params = Arrays.copyOfRange(tokens, 1, tokens.length);
 
@@ -86,34 +82,30 @@ public class ChessClient implements NotificationHandler {
     private String help(State state) {
         return switch (state) {
             case LOGGEDOUT -> """
-
-                 register <USERNAME> <PASSWORD> <EMAIL> - Create an account.
-                 login <USERNAME> <PASSWORD>          - Log in to play chess.
-                 quit                               - Exit the application.
-                 help                               - Show this help message.
+                 register <USER> <PASS> <EMAIL> - Create account
+                 login <USER> <PASS>          - Log in
+                 quit                         - Exit
+                 help                         - Show help
                  """;
             case LOGGEDIN -> """
-
-                 create <NAME>          - Create a new game.
-                 list                   - List available games.
-                 join <INDEX> <COLOR>   - Join a game as WHITE or BLACK (use index from 'list').
-                 observe <INDEX>        - Watch a game (use index from 'list').
-                 logout                 - Log out and return to the main menu.
-                 quit                   - Exit the application.
-                 help                   - Show this help message.
+                 create <NAME>          - Create game
+                 list                   - List games
+                 join <INDEX> <COLOR>   - Join game (WHITE/BLACK)
+                 observe <INDEX>        - Watch game
+                 logout                 - Log out
+                 quit                   - Exit
+                 help                   - Show help
                  """;
             case INCHESSGAME -> """
-
-                 redraw                 - Redraw the chess board.
-                 leave                  - Leave the current game (returns to logged-in menu).
-                 move <FROM> <TO>       - Make a move (e.g., 'move e2 e4').
-                                          For pawn promotion: 'move e7 e8 q' (or r, b, n).
-                 resign                 - Forfeit the current game.
-                 highlight <POSITION>   - Show legal moves for piece at position (e.g., 'highlight e2').
-                 quit                   - Exit the application (will leave game).
-                 help                   - Show this help message.
+                 redraw                 - Redraw board
+                 leave                  - Leave game
+                 move <FROM> <TO> [PROMO]- Make move (e.g., e2 e4, e7 e8 q)
+                 resign                 - Forfeit game
+                 highlight <POS>        - Show legal moves (e.g., e2)
+                 quit                   - Exit (leaves game)
+                 help                   - Show help
                  """;
-            default -> "No help available for current state.";
+            default -> "No help available.";
         };
     }
     private String quit() {
@@ -191,7 +183,7 @@ public class ChessClient implements NotificationHandler {
         }
         String gameName = params[0];
         try {
-            CreateResult result = serverFacade.createGame(new CreateRequest(gameName), this.authToken);
+            serverFacade.createGame(new CreateRequest(gameName), this.authToken);
             return "\nGame '" + gameName + "' created successfully.\n";
         } catch (Exception e) {
             if (e.getMessage() != null && e.getMessage().contains("403")) {
@@ -248,7 +240,6 @@ public class ChessClient implements NotificationHandler {
             return "\nInvalid game index '" + displayIndex + "'. Use 'list' first.\n";
         }
         GameContext gameContext = new GameContext(getColor(colorStr), gameID, null);
-        // http join
         try {
             serverFacade.join(new JoinRequest(colorStr, gameID), this.authToken);
         } catch (Exception e) {
@@ -261,7 +252,6 @@ public class ChessClient implements NotificationHandler {
             }
             return "\nFailed HTTP join request: " + e.getMessage() + "\n";
         }
-        // websocket join
         boolean connected = connectWebSocket(gameID);
         if (connected) {
             this.gameContext = gameContext;
@@ -294,7 +284,6 @@ public class ChessClient implements NotificationHandler {
         if (gameID == null) {
             return "\nInvalid game index '" + displayIndex + "'. Use 'list' first.\n";
         }
-        // websocket join
         boolean connected = connectWebSocket(gameID);
         if (connected) {
             this.gameContext = new GameContext(null, gameID, null);
@@ -340,7 +329,6 @@ public class ChessClient implements NotificationHandler {
         }
         return input.trim().toLowerCase();
     }
-
     private String makeMove(String[] params) throws Exception {
         ChessPosition startPos = getPosition(params[0]);
         ChessPosition endPos = getPosition(params[1]);
@@ -488,16 +476,13 @@ public class ChessClient implements NotificationHandler {
     @Override
     public void handleLoadGame(LoadGameMessage message) {
         ChessGame game = message.getGame();
-        if (game == null) {
-            System.err.println("Error: Received incomplete game load data.");
-            return;
-        }
         this.gameContext = new GameContext(gameContext.playerColor(), gameContext.gameID(), game);
         this.printBoard.setChessBoard(game.getBoard());
         System.out.print("\n");
         switch (gameContext.playerColor()) {
             case BLACK -> System.out.print(printBoard.printBlackBoard());
-            default -> System.out.print(printBoard.printWhiteBoard());
+            case WHITE -> System.out.print(printBoard.printWhiteBoard());
+            case null -> System.out.print(printBoard.printWhiteBoard());
         }
     }
     @Override

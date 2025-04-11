@@ -1,5 +1,7 @@
 package ui;
 
+import server.websocket.NotificationHandler;
+
 import java.util.Scanner;
 import static ui.EscapeSequences.*;
 
