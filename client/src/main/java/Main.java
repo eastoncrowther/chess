@@ -9,7 +9,7 @@ public class Main {
         if (args.length == 1) {
             serverUrl = args[0];
         }
-        var loop = new Repl(serverUrl, State.LOGGEDOUT);
+        var loop = new Repl(serverUrl);
         loop.run();
     }
 }

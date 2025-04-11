@@ -9,7 +9,7 @@ public class ServerMessageDeserializer implements JsonDeserializer<ServerMessage
     @Override
     public ServerMessage deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
         JsonObject jsonObject = jsonElement.getAsJsonObject();
-        String messageType = jsonObject.get("commandType").getAsString();
+        String messageType = jsonObject.get("serverMessageType").getAsString();
 
         Gson gson = new Gson();
 

@@ -13,8 +13,8 @@ public class PreLoginClient {
     private final ServerFacade server;
     private String authToken;
 
-    public PreLoginClient (String serverUrl) {
-        this.server = new ServerFacade(serverUrl);
+    public PreLoginClient (ServerFacade server) {
+        this.server = server;
         this.state = State.LOGGEDOUT;
         authToken = null;
     }

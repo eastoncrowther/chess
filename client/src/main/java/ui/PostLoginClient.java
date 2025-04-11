@@ -1,6 +1,7 @@
 package ui;
 
 import chess.ChessBoard;
+import model.AuthData;
 import model.GameData;
 import requestresult.*;
 import server.ServerFacade;
@@ -24,9 +25,9 @@ public class PostLoginClient {
     private final WebSocketFacade ws;
     private String authToken;
 
-    public PostLoginClient (String serverUrl, String authToken, NotificationHandler notificationHandler) throws Exception {
-        this.server = new ServerFacade(serverUrl);
-        this.ws = new WebSocketFacade(serverUrl, notificationHandler);
+    public PostLoginClient (ServerFacade server, WebSocketFacade ws, String authToken) throws Exception {
+        this.server = server;
+        this.ws = ws;
         this.authToken = authToken;
     }
 
@@ -139,7 +140,7 @@ public class PostLoginClient {
         try {
             ws.connect(authToken, gameID);
             return "Game successfully joined\n";
-        } catch (IOException e) {
+        } catch (Exception e) {
             return "Failed to join game. Try again\n";
         }
     }
