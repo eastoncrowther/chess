@@ -57,8 +57,10 @@ public class ChessMove {
         int endRow = endPosition.getRow();
         int endCol = endPosition.getColumn();
 
+        char startColChar = (char) ('a' + startCol - 1);
+        char endColChar = (char) ('a' + endCol - 1);
 
-        return "" + startRow + startCol + endRow + endCol;
+        return String.format("%c%d %c%d", startColChar, startRow, endColChar, endRow);
     }
 
     @Override
