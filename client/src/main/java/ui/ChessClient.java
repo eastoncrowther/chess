@@ -1,5 +1,4 @@
 package ui;
-
 import chess.*;
 import model.GameData; // Assuming GameData includes usernames
 import requestresult.*;
@@ -9,14 +8,11 @@ import server.websocket.WebSocketFacade;
 import websocket.messages.ErrorMessage;
 import websocket.messages.LoadGameMessage;
 import websocket.messages.NotificationMessage;
-
 import java.io.Console;
 import java.util.*;
-
 import static ui.EscapeSequences.*;
 
 public class ChessClient implements NotificationHandler {
-
     private State currentState = State.LOGGEDOUT;
     private String authToken = null;
     private String username = null;
@@ -26,19 +22,15 @@ public class ChessClient implements NotificationHandler {
     private GameContext gameContext = null;
     private final PrintBoard printBoard;
     private final Map<Integer, Integer> gameIndexToID = new HashMap<>();
-
     private record GameContext(ChessGame.TeamColor playerColor, int gameID, ChessGame chessGame) {}
-
     public ChessClient(String serverUrl) {
         this.serverUrl = serverUrl;
         this.serverFacade = new ServerFacade(serverUrl);
         this.printBoard = new PrintBoard(null); // Board set later
     }
-
     public State getState() {
         return currentState;
     }
-
     public String eval(String input) {
         if (input == null || input.isBlank()) {
             return "";
@@ -58,7 +50,6 @@ public class ChessClient implements NotificationHandler {
             return "\nAn error occurred. Please try again.\n";
         }
     }
-
     private String evalLoggedOut(String command, String[] params) {
         return switch (command) {
             case "quit" -> quit();
@@ -67,7 +58,6 @@ public class ChessClient implements NotificationHandler {
             default -> help(State.LOGGEDOUT);
         };
     }
-
     private String evalLoggedIn(String command, String[] params) throws Exception {
         return switch (command) {
             case "quit" -> quit();
@@ -79,12 +69,10 @@ public class ChessClient implements NotificationHandler {
             default -> help(State.LOGGEDIN);
         };
     }
-
     private String evalInGame(String command, String[] params) throws Exception {
         if (this.webSocketFacade == null || !this.webSocketFacade.isOpen()) {
             return handleUnexpectedDisconnection();
         }
-
         return switch (command) {
             case "quit" -> quit();
             case "leave" -> leave();
@@ -95,7 +83,6 @@ public class ChessClient implements NotificationHandler {
             default -> help(State.INCHESSGAME);
         };
     }
-
     private String help(State state) {
         return switch (state) {
             case LOGGEDOUT -> """
@@ -129,8 +116,6 @@ public class ChessClient implements NotificationHandler {
             default -> "No help available for current state.";
         };
     }
-
-    // Quit
     private String quit() {
         if (this.webSocketFacade != null) {
             try {
@@ -141,8 +126,6 @@ public class ChessClient implements NotificationHandler {
         this.currentState = State.QUIT;
         return "";
     }
-
-
     private String login(String[] params) {
         if (params.length != 2) {
             return "Usage: login <USERNAME> <PASSWORD>\n";
@@ -159,7 +142,6 @@ public class ChessClient implements NotificationHandler {
             return "\nLogin failed: Incorrect username/password.\n";
         }
     }
-
     private String register(String[] params) {
         if (params.length != 3) {
             return "Usage: register <USERNAME> <PASSWORD> <EMAIL>\n";
@@ -182,15 +164,12 @@ public class ChessClient implements NotificationHandler {
             return "\nRegistration failed\n";
         }
     }
-
     private String logout() {
         if (this.authToken == null) {
             return "\nAlready logged out.\n";
         }
-
         closeWebSocketConnection();
         this.gameContext = null;
-
         try {
             serverFacade.logout(this.authToken);
             this.authToken = null;
@@ -206,7 +185,6 @@ public class ChessClient implements NotificationHandler {
             return "\nLogout failed.\n";
         }
     }
-
     private String create(String[] params) {
         if (params.length != 1 || params[0].isEmpty()) {
             return "Usage: create <GAME_NAME>\n";
@@ -224,24 +202,19 @@ public class ChessClient implements NotificationHandler {
             return "\nFailed to create game: " + e.getMessage() + "\n";
         }
     }
-
     private String list() {
         try {
             ListResult result = serverFacade.list(this.authToken);
             if (result == null || result.games() == null || result.games().isEmpty()) {
                 return "\nNo games available.\n";
             }
-
             StringBuilder response = new StringBuilder("\nAvailable Games:\n");
             this.gameIndexToID.clear();
             int displayIndex = 1;
-
             for (GameData game : result.games()) {
                 this.gameIndexToID.put(displayIndex, game.gameID());
-
                 String whitePlayer = (game.whiteUsername() == null || game.whiteUsername().isEmpty()) ? "[available]" : game.whiteUsername();
                 String blackPlayer = (game.blackUsername() == null || game.blackUsername().isEmpty()) ? "[available]" : game.blackUsername();
-
                 response.append(String.format(" %d: %-15s (White: %-10s | Black: %-10s)\n",
                         displayIndex,
                         game.gameName(),
@@ -258,7 +231,6 @@ public class ChessClient implements NotificationHandler {
             return "\nError listing games: " + e.getMessage() + "\n";
         }
     }
-
     private String join(String[] params) {
         if (params.length != 2) {
             return "Usage: join <INDEX> <COLOR (WHITE or BLACK)>\n";
@@ -275,7 +247,6 @@ public class ChessClient implements NotificationHandler {
         if (gameID == null) {
             return "\nInvalid game index '" + displayIndex + "'. Use 'list' first.\n";
         }
-
         GameContext gameContext = new GameContext(getColor(colorStr), gameID, null);
         // http join
         try {
@@ -309,7 +280,6 @@ public class ChessClient implements NotificationHandler {
             return null;
         }
     }
-
     private String observe(String[] params) {
         if (params.length != 1) {
             return "Usage: observe <INDEX>\n";
@@ -333,12 +303,10 @@ public class ChessClient implements NotificationHandler {
             return "\nFailed to connect WebSocket to observe game.\n";
         }
     }
-
     private String leave() {
         if (this.webSocketFacade == null) {
             return "\nNot currently in a game.\n";
         }
-
         try {
             this.webSocketFacade.leave();
         } catch (Exception e) {
@@ -347,18 +315,62 @@ public class ChessClient implements NotificationHandler {
         cleanupAfterGame();
         return "\nYou have left the game.\n";
     }
+    private String promptUserInput(String prompt) {
+        System.out.print(prompt + " ");
+        Console console = System.console();
+        String input = null;
+
+        try {
+            if (console != null) {
+                input = console.readLine();
+            } else {
+                Scanner scanner = new Scanner(System.in);
+                if (scanner.hasNextLine()) {
+                    input = scanner.nextLine();
+                }
+            }
+        } catch (NoSuchElementException | IllegalStateException e) {
+            System.err.println("\nError reading input: " + e.getMessage());
+            return null;
+        }
+
+        if (input == null) {
+            System.err.println("\nInput stream closed or unavailable.");
+            return null;
+        }
+        return input.trim().toLowerCase();
+    }
 
     private String makeMove(String[] params) throws Exception {
-        // get the position from the command
         ChessPosition startPos = getPosition(params[0]);
         ChessPosition endPos = getPosition(params[1]);
         if (startPos == null || endPos == null) {
             return "\nMake sure move is formatted correctly <a1 a2>.\n";
         }
-        // add a function to get the promotion piece
-        ChessMove chessMove = new ChessMove(startPos, endPos, null);
+        ChessPiece movingPiece = gameContext.chessGame.getBoard().getPiece(startPos);
+        ChessPiece.PieceType promotionPiece = null;
+        if (movingPiece != null && movingPiece.getPieceType() == ChessPiece.PieceType.PAWN) {
+            int promotionRank = (movingPiece.getTeamColor() == ChessGame.TeamColor.WHITE) ? 8 : 1;
+            if (endPos.getRow() == promotionRank) {
+                String promoInput = promptUserInput("Pawn promotion! Enter piece type (q, r, b, n):");
+                if (promoInput == null) {
+                    return "\nMove cancelled due to input error during promotion selection.\n";
+                }
+                promotionPiece = getPromotionPiece(promoInput);
+            }
+        }
+        ChessMove chessMove = new ChessMove(startPos, endPos, promotionPiece);
         this.webSocketFacade.makeMove(chessMove);
         return "\n";
+    }
+    private ChessPiece.PieceType getPromotionPiece(String promoInput) {
+        return switch (promoInput.toLowerCase()) {
+            case "q" -> ChessPiece.PieceType.QUEEN;
+            case "r" -> ChessPiece.PieceType.ROOK;
+            case "b" -> ChessPiece.PieceType.BISHOP;
+            case "n" -> ChessPiece.PieceType.KNIGHT;
+            default -> null;
+        };
     }
     private ChessPosition getPosition(String position) {
         if (position.length() != 2) {
@@ -366,101 +378,66 @@ public class ChessClient implements NotificationHandler {
         }
         char colChar = Character.toUpperCase(position.charAt(0));
         int row = Character.getNumericValue(position.charAt(1));
-
         if (row < 1 || row > 8 || colChar < 'A' || colChar > 'H') {
             return null;
         }
-
         int col = colChar - 'A' + 1;
-
         return new ChessPosition(row, col);
     }
-
     private String resign() {
         if (gameContext == null || gameContext.playerColor() == null) {
             return "\nObservers cannot resign.\n";
         }
-        System.out.print("Are you sure you want to resign? (yes/no): ");
-        Console console = System.console();
-        String confirmation = "";
-
-        if (console != null) {
-            confirmation = console.readLine();
-            if (confirmation == null) {
-                return "\nCould not read confirmation input.\n";
-            }
-            confirmation = confirmation.trim().toLowerCase();
-        } else {
-            Scanner scanner = new Scanner(System.in);
-            try {
-                if (scanner.hasNextLine()) {
-                    confirmation = scanner.nextLine().trim().toLowerCase();
-                } else {
-                    return "\nConfirmation input unavailable.\n";
-                }
-            } catch (NoSuchElementException | IllegalStateException e) {
-                return "\nCould not read confirmation input.\n";
-            }
+        String confirmation = promptUserInput("Are you sure you want to resign? (yes/no):");
+        if (confirmation == null) {
+            return "\nCould not read confirmation input.\n";
         }
-
         if (confirmation.equals("yes") || confirmation.equals("y")) {
             try {
                 if (this.webSocketFacade != null && this.webSocketFacade.isOpen()) {
                     this.webSocketFacade.resign();
-                    return "\nResignation command sent.\n";
+                    return "\nResignation sent.\n";
                 } else {
                     return handleUnexpectedDisconnection();
                 }
             } catch (Exception e) {
-                return "\nFailed to send resignation command\n";
+                System.err.println("Error sending resignation: " + e.getMessage());
+                return "\nFailed to send resignation: " + e.getMessage() + "\n";
             }
         } else {
             return "\nResignation cancelled.\n";
         }
     }
-
     private String highlightMoves(String[] params) {
         if (params.length != 1) {
             return "\nUsage: highlight <POSITION>\nExample: highlight e2\n";
         }
-
         ChessPosition startPos = getPosition(params[0]);
         if (startPos == null) {
             return "\nInvalid position format. Use algebraic notation (e.g., 'a1', 'h8').\n";
         }
-
         if (gameContext == null || gameContext.chessGame() == null) {
             return "\nGame state not available. Cannot highlight moves.\n";
         }
-
         ChessPiece piece = gameContext.chessGame().getBoard().getPiece(startPos);
         if (piece == null) {
             return "\nNo piece at position " + params[0] + ".\n";
         }
-
-
         Collection<ChessMove> validMoves = gameContext.chessGame().validMoves(startPos);
-
         if (validMoves == null || validMoves.isEmpty()) {
             printBoard.clearHighlights();
             return redraw() + "\nNo legal moves for the piece at " + params[0] + ".\n";
         }
-
         printBoard.setHighlights(startPos, validMoves);
-
         String boardString = printWhiteOrBlackPerspective(gameContext.playerColor());
-
         printBoard.clearHighlights();
-
         return boardString + "\nShowing legal moves for piece at " + params[0] + ".\n";
     }
     private String redraw() {
         if (gameContext == null || gameContext.chessGame() == null) {
             return "\nGame state not available. Cannot redraw board.\n";
         }
-
         printBoard.setChessBoard(gameContext.chessGame().getBoard());
-
         return printWhiteOrBlackPerspective(gameContext.playerColor());
     }
     String printWhiteOrBlackPerspective(ChessGame.TeamColor teamColor) {
@@ -471,9 +448,6 @@ public class ChessClient implements NotificationHandler {
             return printBoard.printWhiteBoard();
         }
     }
-
-
-
     private boolean connectWebSocket(int gameID) {
         if (this.webSocketFacade != null && this.webSocketFacade.isOpen()) {
             System.err.println("Warning: WebSocket already seems open. Closing existing one.");
@@ -491,7 +465,6 @@ public class ChessClient implements NotificationHandler {
             return false;
         }
     }
-
     private void closeWebSocketConnection() {
         if (this.webSocketFacade != null) {
             try {
@@ -503,29 +476,23 @@ public class ChessClient implements NotificationHandler {
             }
         }
     }
-
     private void cleanupAfterGame() {
         closeWebSocketConnection();
         this.gameContext = null;
         this.currentState = State.LOGGEDIN;
     }
-
     private String handleUnexpectedDisconnection() {
         cleanupAfterGame();
         return "\nConnection lost. Returning to logged-in menu.\n";
     }
-
-
     @Override
     public void handleLoadGame(LoadGameMessage message) {
         ChessGame game = message.getGame();
-
         if (game == null) {
             System.err.println("Error: Received incomplete game load data.");
             return;
         }
         this.gameContext = new GameContext(gameContext.playerColor(), gameContext.gameID(), game);
-
         this.printBoard.setChessBoard(game.getBoard());
         System.out.print("\n");
         switch (gameContext.playerColor()) {
@@ -533,12 +500,10 @@ public class ChessClient implements NotificationHandler {
             default -> System.out.print(printBoard.printWhiteBoard());
         }
     }
-
     @Override
     public void handleNotification(NotificationMessage message) {
         System.out.println("\n" + SET_TEXT_COLOR_BLUE + "[Notification] " + message.getMessage() + RESET_TEXT_COLOR);
     }
-
     @Override
     public void handleError(ErrorMessage message) {
         System.out.println("\n" + SET_TEXT_COLOR_RED + "[Game Error] " + message.getErrorMessage() + RESET_TEXT_COLOR);
