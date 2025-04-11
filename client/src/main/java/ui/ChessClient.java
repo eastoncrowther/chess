@@ -380,31 +380,39 @@ public class ChessClient implements NotificationHandler {
         if (gameContext == null || gameContext.playerColor() == null) {
             return "\nObservers cannot resign.\n";
         }
-
         System.out.print("Are you sure you want to resign? (yes/no): ");
         Console console = System.console();
         String confirmation = "";
+
         if (console != null) {
-            confirmation = console.readLine().trim().toLowerCase();
+            confirmation = console.readLine();
+            if (confirmation == null) {
+                return "\nCould not read confirmation input.\n";
+            }
+            confirmation = confirmation.trim().toLowerCase();
         } else {
-            try (Scanner scanner = new Scanner(System.in)) {
-                confirmation = scanner.nextLine().trim().toLowerCase();
-            } catch(Exception e){
+            Scanner scanner = new Scanner(System.in);
+            try {
+                if (scanner.hasNextLine()) {
+                    confirmation = scanner.nextLine().trim().toLowerCase();
+                } else {
+                    return "\nConfirmation input unavailable.\n";
+                }
+            } catch (NoSuchElementException | IllegalStateException e) {
                 return "\nCould not read confirmation input.\n";
             }
         }
-
-
+        
         if (confirmation.equals("yes") || confirmation.equals("y")) {
             try {
                 if (this.webSocketFacade != null && this.webSocketFacade.isOpen()) {
                     this.webSocketFacade.resign();
-                    return "\n";
+                    return "\nResignation command sent.\n";
                 } else {
-                    return handleUnexpectedDisconnection(); // Handle case where connection dropped
+                    return handleUnexpectedDisconnection();
                 }
             } catch (Exception e) {
-                return "\nFailed to send resignation command: " + e.getMessage() + "\n";
+                return "\nFailed to send resignation command\n";
             }
         } else {
             return "\nResignation cancelled.\n";
