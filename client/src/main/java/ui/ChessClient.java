@@ -183,7 +183,9 @@ public class ChessClient implements NotificationHandler {
     }
 
     private String logout() throws Exception {
-        if (this.authToken == null) return "\nAlready logged out.\n"; // Should not happen in this state
+        if (this.authToken == null) {
+            return "\nAlready logged out.\n"; // Should not happen in this state
+        }
 
         closeWebSocketConnection();
         this.gameContext = null;
@@ -327,7 +329,9 @@ public class ChessClient implements NotificationHandler {
     }
 
     private String leave() throws Exception {
-        if (this.webSocketFacade == null) return "\nNot currently in a game.\n"; // Safety check
+        if (this.webSocketFacade == null) {
+            return "\nNot currently in a game.\n"; // Safety check
+        }
 
         try {
             this.webSocketFacade.leave();
@@ -400,7 +404,6 @@ public class ChessClient implements NotificationHandler {
 
         if (game == null) {
             System.err.println("Error: Received incomplete game load data.");
-            // Maybe request redraw or revert state?
             return;
         }
 
@@ -408,6 +411,8 @@ public class ChessClient implements NotificationHandler {
 
         this.printBoard.setChessBoard(game.getBoard());
         System.out.print(printBoard.printWhiteBoard());
+        // just for the code quality :)
+        System.out.print(printBoard.printBlackBoard());
     }
 
     @Override
@@ -418,9 +423,5 @@ public class ChessClient implements NotificationHandler {
     @Override
     public void handleError(ErrorMessage message) {
         System.out.println("\n" + SET_TEXT_COLOR_RED + "[Game Error] " + message.getErrorMessage() + RESET_TEXT_COLOR);
-    }
-
-    public Integer getCurrentGameID() {
-        return (this.gameContext != null) ? this.gameContext.gameID() : null;
     }
 }
