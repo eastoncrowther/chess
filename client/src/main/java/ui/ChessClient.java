@@ -27,7 +27,7 @@ public class ChessClient implements NotificationHandler {
     private final PrintBoard printBoard;
     private final Map<Integer, Integer> gameIndexToID = new HashMap<>();
 
-    private record GameContext(ChessGame game, ChessGame.TeamColor playerColor, int gameID) {}
+    private record GameContext(ChessGame.TeamColor playerColor, int gameID, ChessBoard board) {}
 
     public ChessClient(String serverUrl) {
         this.serverUrl = serverUrl;
@@ -59,7 +59,7 @@ public class ChessClient implements NotificationHandler {
         }
     }
 
-    private String evalLoggedOut(String command, String[] params) throws Exception {
+    private String evalLoggedOut(String command, String[] params) {
         return switch (command) {
             case "quit" -> quit();
             case "login" -> login(params);
@@ -143,7 +143,7 @@ public class ChessClient implements NotificationHandler {
     }
 
 
-    private String login(String[] params) throws Exception {
+    private String login(String[] params) {
         if (params.length != 2) {
             return "Usage: login <USERNAME> <PASSWORD>\n";
         }
@@ -152,7 +152,7 @@ public class ChessClient implements NotificationHandler {
         try {
             LoginResult result = serverFacade.login(new LoginRequest(username, password));
             this.authToken = result.authToken();
-            this.username = result.username(); // Store username
+            this.username = result.username();
             this.currentState = State.LOGGEDIN;
             return "\nLogged in successfully as " + this.username + ".\n";
         } catch (Exception e) {
@@ -160,7 +160,7 @@ public class ChessClient implements NotificationHandler {
         }
     }
 
-    private String register(String[] params) throws Exception {
+    private String register(String[] params) {
         if (params.length != 3) {
             return "Usage: register <USERNAME> <PASSWORD> <EMAIL>\n";
         }
@@ -170,7 +170,7 @@ public class ChessClient implements NotificationHandler {
         try {
             RegisterResult result = serverFacade.register(new RegisterRequest(username, password, email));
             this.authToken = result.authToken();
-            this.username = result.username(); // Store username
+            this.username = result.username();
             this.currentState = State.LOGGEDIN;
             return "\nRegistration successful. Logged in as " + this.username + ".\n";
         } catch (Exception e) {
@@ -183,9 +183,9 @@ public class ChessClient implements NotificationHandler {
         }
     }
 
-    private String logout() throws Exception {
+    private String logout() {
         if (this.authToken == null) {
-            return "\nAlready logged out.\n"; // Should not happen in this state
+            return "\nAlready logged out.\n";
         }
 
         closeWebSocketConnection();
@@ -207,7 +207,7 @@ public class ChessClient implements NotificationHandler {
         }
     }
 
-    private String create(String[] params) throws Exception {
+    private String create(String[] params) {
         if (params.length != 1 || params[0].isEmpty()) {
             return "Usage: create <GAME_NAME>\n";
         }
@@ -225,7 +225,7 @@ public class ChessClient implements NotificationHandler {
         }
     }
 
-    private String list() throws Exception {
+    private String list() {
         try {
             ListResult result = serverFacade.list(this.authToken);
             if (result == null || result.games() == null || result.games().isEmpty()) {
@@ -270,12 +270,13 @@ public class ChessClient implements NotificationHandler {
             return "\nInvalid game index. Please use the number shown in 'list'.\n";
         }
         String colorStr = params[1].toUpperCase();
-
         Integer gameID = this.gameIndexToID.get(displayIndex);
+
         if (gameID == null) {
             return "\nInvalid game index '" + displayIndex + "'. Use 'list' first.\n";
         }
 
+        GameContext gameContext = new GameContext(getColor(colorStr), gameID, null);
         // http join
         try {
             serverFacade.join(new JoinRequest(colorStr, gameID), this.authToken);
@@ -285,20 +286,31 @@ public class ChessClient implements NotificationHandler {
             } else if (e.getMessage() != null && e.getMessage().contains("401")) {
                 return "\nError: Not authorized to join game (check login status).\n";
             } else if (e.getMessage() != null && e.getMessage().contains("400")) {
-                return "\nFailed to join: Invalid request (game ID " + gameID + " might not exist).\n";
+                return "\nFailed to join: Invalid request (game might not exist).\n";
             }
             return "\nFailed HTTP join request: " + e.getMessage() + "\n";
         }
         // websocket join
         boolean connected = connectWebSocket(gameID);
         if (connected) {
+            this.gameContext = gameContext;
             return "\nJoin request sent. Connecting to game...\n";
         } else {
             return "\nJoined game but failed to connect.\n";
         }
     }
+    private ChessGame.TeamColor getColor(String colorStr) {
+        if (colorStr.equals("WHITE")) {
+            return ChessGame.TeamColor.WHITE;
+        } else if (colorStr.equals("BLACK")) {
+            return ChessGame.TeamColor.BLACK;
+        }
+        else {
+            return null;
+        }
+    }
 
-    private String observe(String[] params) throws Exception {
+    private String observe(String[] params) {
         if (params.length != 1) {
             return "Usage: observe <INDEX>\n";
         }
@@ -315,6 +327,7 @@ public class ChessClient implements NotificationHandler {
         // websocket join
         boolean connected = connectWebSocket(gameID);
         if (connected) {
+            this.gameContext = new GameContext(null, gameID, null);
             return "\nConnecting to observe game " + gameID + "...\n";
         } else {
             return "\nFailed to connect WebSocket to observe game.\n";
@@ -323,7 +336,7 @@ public class ChessClient implements NotificationHandler {
 
     private String leave() {
         if (this.webSocketFacade == null) {
-            return "\nNot currently in a game.\n"; // Safety check
+            return "\nNot currently in a game.\n";
         }
 
         try {
@@ -363,15 +376,58 @@ public class ChessClient implements NotificationHandler {
         return new ChessPosition(row, col);
     }
 
-
     private String resign() {
-        return null;
+        if (gameContext == null || gameContext.playerColor() == null) {
+            return "\nObservers cannot resign.\n";
+        }
+
+        System.out.print("Are you sure you want to resign? (yes/no): ");
+        Console console = System.console();
+        String confirmation = "";
+        if (console != null) {
+            confirmation = console.readLine().trim().toLowerCase();
+        } else {
+            try (Scanner scanner = new Scanner(System.in)) {
+                confirmation = scanner.nextLine().trim().toLowerCase();
+            } catch(Exception e){
+                return "\nCould not read confirmation input.\n";
+            }
+        }
+
+
+        if (confirmation.equals("yes") || confirmation.equals("y")) {
+            try {
+                if (this.webSocketFacade != null && this.webSocketFacade.isOpen()) {
+                    this.webSocketFacade.resign();
+                    return "\n";
+                } else {
+                    return handleUnexpectedDisconnection(); // Handle case where connection dropped
+                }
+            } catch (Exception e) {
+                return "\nFailed to send resignation command: " + e.getMessage() + "\n";
+            }
+        } else {
+            return "\nResignation cancelled.\n";
+        }
     }
+
     private String highlightMoves(String[] params) {
         return null;
     }
     private String redraw() {
-        return null;
+        if (gameContext == null || gameContext.board == null) {
+            return "\nGame state not available. Cannot redraw board.\n";
+        }
+
+        printBoard.setChessBoard(gameContext.board);
+
+        ChessGame.TeamColor perspective = (gameContext.playerColor() != null) ? gameContext.playerColor() : ChessGame.TeamColor.WHITE;
+
+        if (perspective == ChessGame.TeamColor.WHITE) {
+            return printBoard.printWhiteBoard();
+        } else {
+            return printBoard.printBlackBoard();
+        }
     }
 
     private boolean connectWebSocket(int gameID) {
@@ -424,13 +480,14 @@ public class ChessClient implements NotificationHandler {
             System.err.println("Error: Received incomplete game load data.");
             return;
         }
-
-        ChessGame.TeamColor color = ChessGame.TeamColor.WHITE;
+        this.gameContext = new GameContext(gameContext.playerColor(), gameContext.gameID(), game.getBoard());
 
         this.printBoard.setChessBoard(game.getBoard());
-        System.out.print(printBoard.printWhiteBoard());
-        // just for the code quality :)
-        System.out.print(printBoard.printBlackBoard());
+        System.out.print("\n");
+        switch (gameContext.playerColor()) {
+            case BLACK -> System.out.print(printBoard.printBlackBoard());
+            default -> System.out.print(printBoard.printWhiteBoard());
+        }
     }
 
     @Override

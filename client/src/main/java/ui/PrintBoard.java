@@ -12,6 +12,9 @@ public class PrintBoard {
     public PrintBoard(ChessBoard chessBoard) {
         this.chessBoard = chessBoard;
     }
+    public void setChessBoard (ChessBoard chessBoard) {
+        this.chessBoard = chessBoard;
+    }
 
     public String printWhiteBoard() {
         StringBuilder boardString = new StringBuilder();
@@ -69,9 +72,6 @@ public class PrintBoard {
         } else {
             return ((row + col) % 2 == 0) ? SET_BG_COLOR_LIGHT_GREY : SET_BG_COLOR_DARK_GREY;
         }
-    }
-    void setChessBoard (ChessBoard chessBoard) {
-        this.chessBoard = chessBoard;
     }
 }
 
