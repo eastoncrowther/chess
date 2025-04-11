@@ -402,7 +402,7 @@ public class ChessClient implements NotificationHandler {
                 return "\nCould not read confirmation input.\n";
             }
         }
-        
+
         if (confirmation.equals("yes") || confirmation.equals("y")) {
             try {
                 if (this.webSocketFacade != null && this.webSocketFacade.isOpen()) {
