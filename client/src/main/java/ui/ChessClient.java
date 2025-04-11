@@ -27,7 +27,7 @@ public class ChessClient implements NotificationHandler {
     private final PrintBoard printBoard;
     private final Map<Integer, Integer> gameIndexToID = new HashMap<>();
 
-    private record GameContext(ChessGame.TeamColor playerColor, int gameID, ChessBoard board) {}
+    private record GameContext(ChessGame.TeamColor playerColor, int gameID, ChessGame chessGame) {}
 
     public ChessClient(String serverUrl) {
         this.serverUrl = serverUrl;
@@ -286,7 +286,7 @@ public class ChessClient implements NotificationHandler {
             } else if (e.getMessage() != null && e.getMessage().contains("401")) {
                 return "\nError: Not authorized to join game (check login status).\n";
             } else if (e.getMessage() != null && e.getMessage().contains("400")) {
-                return "\nFailed to join: Invalid request (game might not exist).\n";
+                return "\nFailed to join: Invalid request.\n";
             }
             return "\nFailed HTTP join request: " + e.getMessage() + "\n";
         }
@@ -328,7 +328,7 @@ public class ChessClient implements NotificationHandler {
         boolean connected = connectWebSocket(gameID);
         if (connected) {
             this.gameContext = new GameContext(null, gameID, null);
-            return "\nConnecting to observe game " + gameID + "...\n";
+            return "\nConnecting to observe game " + displayIndex + "...\n";
         } else {
             return "\nFailed to connect WebSocket to observe game.\n";
         }
@@ -412,23 +412,59 @@ public class ChessClient implements NotificationHandler {
     }
 
     private String highlightMoves(String[] params) {
-        return null;
+        if (params.length != 1) {
+            return "\nUsage: highlight <POSITION>\nExample: highlight e2\n";
+        }
+
+        ChessPosition startPos = getPosition(params[0]);
+        if (startPos == null) {
+            return "\nInvalid position format. Use algebraic notation (e.g., 'a1', 'h8').\n";
+        }
+
+        if (gameContext == null || gameContext.chessGame() == null) {
+            return "\nGame state not available. Cannot highlight moves.\n";
+        }
+
+        ChessPiece piece = gameContext.chessGame().getBoard().getPiece(startPos);
+        if (piece == null) {
+            return "\nNo piece at position " + params[0] + ".\n";
+        }
+
+
+        Collection<ChessMove> validMoves = gameContext.chessGame().validMoves(startPos);
+
+        if (validMoves == null || validMoves.isEmpty()) {
+            printBoard.clearHighlights();
+            return redraw() + "\nNo legal moves for the piece at " + params[0] + ".\n";
+        }
+
+        printBoard.setHighlights(startPos, validMoves);
+
+        String boardString = printWhiteOrBlackPerspective(gameContext.playerColor());
+
+        printBoard.clearHighlights();
+
+        return boardString + "\nShowing legal moves for piece at " + params[0] + ".\n";
     }
     private String redraw() {
-        if (gameContext == null || gameContext.board == null) {
+        if (gameContext == null || gameContext.chessGame() == null) {
             return "\nGame state not available. Cannot redraw board.\n";
         }
 
-        printBoard.setChessBoard(gameContext.board);
+        printBoard.setChessBoard(gameContext.chessGame().getBoard());
 
-        ChessGame.TeamColor perspective = (gameContext.playerColor() != null) ? gameContext.playerColor() : ChessGame.TeamColor.WHITE;
-
-        if (perspective == ChessGame.TeamColor.WHITE) {
-            return printBoard.printWhiteBoard();
-        } else {
+        return printWhiteOrBlackPerspective(gameContext.playerColor());
+    }
+    String printWhiteOrBlackPerspective(ChessGame.TeamColor teamColor) {
+        if (teamColor == ChessGame.TeamColor.BLACK) {
             return printBoard.printBlackBoard();
         }
+        else {
+            return printBoard.printWhiteBoard();
+        }
     }
+
+
 
     private boolean connectWebSocket(int gameID) {
         if (this.webSocketFacade != null && this.webSocketFacade.isOpen()) {
@@ -480,7 +516,7 @@ public class ChessClient implements NotificationHandler {
             System.err.println("Error: Received incomplete game load data.");
             return;
         }
-        this.gameContext = new GameContext(gameContext.playerColor(), gameContext.gameID(), game.getBoard());
+        this.gameContext = new GameContext(gameContext.playerColor(), gameContext.gameID(), game);
 
         this.printBoard.setChessBoard(game.getBoard());
         System.out.print("\n");
